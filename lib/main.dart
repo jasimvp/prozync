@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/splashscreen.dart';
+// import 'package:prozync/splashscreen.dart';
+// import 'package:prozync/splashscreen.dart';
 
 void main() {
   runApp(const MyApp());
