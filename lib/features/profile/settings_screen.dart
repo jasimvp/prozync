@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/main.dart';
+import 'package:prozync/features/profile/saved_projects_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -31,6 +32,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Update Email'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.bookmark_border),
+            title: const Text('Saved Projects'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SavedProjectsScreen()),
+              );
+            },
           ),
           const Divider(),
           _buildSectionHeader('Preference'),

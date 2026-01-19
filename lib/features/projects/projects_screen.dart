@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
+import 'package:prozync/models/project_model.dart';
+import 'package:prozync/core/services/project_service.dart';
 
-class ProjectsScreen extends StatelessWidget {
+class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
+
+  @override
+  State<ProjectsScreen> createState() => _ProjectsScreenState();
+}
+
+class _ProjectsScreenState extends State<ProjectsScreen> {
+  final _projectService = ProjectService();
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +50,9 @@ class ProjectsScreen extends StatelessWidget {
   Widget _buildProjectList(BuildContext context, {required bool isMyRepo}) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 900;
+    
+    // Filter projects from the service
+    final projects = _projectService.projects.where((p) => p.isMyRepo == isMyRepo).toList();
 
     return Center(
       child: Container(
@@ -50,16 +62,16 @@ class ProjectsScreen extends StatelessWidget {
             horizontal: isWide ? 0 : 16,
             vertical: 16,
           ),
-          itemCount: 5,
+          itemCount: projects.length,
           itemBuilder: (context, index) {
-            return _buildProjectCard(context, index, isMyRepo);
+            return _buildProjectCard(context, projects[index]);
           },
         ),
       ),
     );
   }
 
-  Widget _buildProjectCard(BuildContext context, int index, bool isMyRepo) {
+  Widget _buildProjectCard(BuildContext context, Project project) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: ListTile(
@@ -67,32 +79,46 @@ class ProjectsScreen extends StatelessWidget {
         title: Row(
           children: [
             Icon(
-              index % 2 == 0 ? Icons.lock_outline : Icons.public,
+              project.isMyRepo ? Icons.lock_outline : Icons.public, // Simplified logic
               size: 16,
               color: Colors.grey,
             ),
             const SizedBox(width: 8),
             Text(
-              isMyRepo ? 'my-awesome-project-${index + 1}' : 'collab-project-${index + 1}',
+              project.name,
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
             ),
+             const Spacer(),
+            if (project.isMyRepo) // Only allow pinning my repos
+              IconButton(
+                icon: Icon(
+                  project.isPinned ? Icons.star : Icons.star_border,
+                  color: project.isPinned ? Colors.amber : Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _projectService.togglePin(project.id);
+                  });
+                },
+                tooltip: project.isPinned ? 'Unpin' : 'Pin to Profile',
+              ),
           ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            const Text(
-              'A professional cross-platform mobile application built with Flutter and Firebase.',
+            Text(
+              project.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildLanguageTag('Flutter', Colors.blue),
+                _buildLanguageTag(project.language, _getLanguageColor(project.language)),
                 const SizedBox(width: 8),
-                Text('Updated 2h ago', style: Theme.of(context).textTheme.bodySmall),
+                Text('Updated recently', style: Theme.of(context).textTheme.bodySmall), // simplified time
                 const Spacer(),
                 GestureDetector(
                   onTap: () {
@@ -100,16 +126,16 @@ class ProjectsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => OtherUserProfileScreen(
-                          userName: 'DevUser ${index + 5}',
+                          userName: 'DevUser',
                           userDesignation: 'Flutter Contributor',
-                          userImage: 'https://i.pravatar.cc/150?u=dev${index + 5}',
+                          userImage: 'https://i.pravatar.cc/150?u=dev1',
                         ),
                       ),
                     );
                   },
-                  child: Text(
-                    'by @dev${index + 5}',
-                    style: const TextStyle(color: Colors.blue, fontSize: 12, decoration: TextDecoration.underline),
+                  child: const Text(
+                    'by @owner',
+                    style: TextStyle(color: Colors.blue, fontSize: 12, decoration: TextDecoration.underline),
                   ),
                 ),
               ],
@@ -119,22 +145,19 @@ class ProjectsScreen extends StatelessWidget {
 
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
-            if (index % 2 == 0) const PopupMenuItem(child: Text('Download ZIP')),
+            const PopupMenuItem(child: Text('Download ZIP')),
             const PopupMenuItem(child: Text('Share')),
-            if (isMyRepo) const PopupMenuItem(child: Text('Edit')),
+            if (project.isMyRepo) const PopupMenuItem(child: Text('Edit')),
           ],
         ),
         onTap: () {
-          final isPublic = index % 2 != 0; // My logic for public/private in this mock
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ProjectDetailsScreen(
-                projectName: isMyRepo ? 'my-awesome-project-${index + 1}' : 'collab-project-${index + 1}',
-                isPublic: isPublic,
-                description: isPublic 
-                    ? 'A professional cross-platform mobile application built with Flutter and Firebase.'
-                    : 'Confidential development project. README and downloads restricted.',
+                projectName: project.name,
+                isPublic: !project.isMyRepo,
+                description: project.description,
               ),
             ),
           );
@@ -157,62 +180,14 @@ class ProjectsScreen extends StatelessWidget {
     );
   }
 
-  void _showRepoDetails(BuildContext context, int index) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'README.md',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.download, size: 18),
-                    label: const Text('ZIP'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              const Text(
-                '# Awesome Flutter Project\n\n'
-                'This is a sample README file for the project. It explains how to set up and run the application.\n\n'
-                '## Features\n'
-                '- Material 3 Design\n'
-                '- Authentication\n'
-                '- Collaboration Tools\n\n'
-                '## Installation\n'
-                '```bash\n'
-                'flutter pub get\n'
-                'flutter run\n'
-                '```',
-                style: TextStyle(fontFamily: 'monospace'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Color _getLanguageColor(String language) {
+    switch (language.toLowerCase()) {
+      case 'flutter': return Colors.blue;
+      case 'javascript': return Colors.yellow[700]!;
+      case 'python': return Colors.blue[800]!;
+      case 'react': return Colors.cyan;
+      default: return Colors.grey;
+    }
   }
 
   void _showUploadDialog(BuildContext context) {

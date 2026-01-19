@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/features/profile/settings_screen.dart';
+import 'package:prozync/core/services/project_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -142,40 +143,60 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildWorksSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListenableBuilder(
+      listenable: ProjectService(),
+      builder: (context, child) {
+        final myWorks = ProjectService().myWorks;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'My Works',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'My Works',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(onPressed: () {}, child: const Text('View All')),
+                ],
               ),
-              TextButton(onPressed: () {}, child: const Text('View All')),
+              const SizedBox(height: 8),
+              if (myWorks.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'Pin your best projects to showcase them here.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: myWorks.length,
+                  itemBuilder: (context, index) {
+                    final project = myWorks[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: const Icon(Icons.star, color: Colors.amber),
+                        title: Text(project.name),
+                        subtitle: Text(project.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                        onTap: () {
+                          // Navigate to project details
+                        },
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
-          const SizedBox(height: 8),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: const Icon(Icons.folder, color: Colors.blue),
-                  title: Text('Project Alpha ${index + 1}'),
-                  subtitle: const Text('Updated 3 days ago'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

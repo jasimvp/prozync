@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/features/activity/activity_screen.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
+import 'package:prozync/features/activity/chat_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -39,7 +40,6 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
           IconButton(
             onPressed: () {
               Navigator.push(
@@ -47,7 +47,17 @@ class HomeScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const ActivityScreen()),
               );
             },
-            icon: const Icon(Icons.notifications_none_outlined),
+            icon: const Icon(Icons.favorite_border),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ChatListScreen()),
+              );
+            },
+            icon: const Icon(Icons.messenger_outline),
           ),
         ],
       ),
@@ -115,14 +125,14 @@ class HomeScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Alex Thompson $index',
+                              'Cloud Deploy v2.0',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue[900],
                                   ),
                             ),
                             Text(
-                              '2d ago • deployed Cloud Deploy v2.0',
+                              'by Alex Thompson $index • 2d ago',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.grey,
                                   ),
@@ -165,6 +175,7 @@ class HomeScreen extends StatelessWidget {
                     _buildActionButton(Icons.favorite_border, '256', Colors.red),
                     _buildActionButton(Icons.chat_bubble_outline, '34', Colors.blue),
                     _buildActionButton(Icons.share_outlined, 'Share', Colors.grey),
+                    _buildActionButton(Icons.bookmark_border, 'Save', Colors.grey),
                   ],
                 ),
               ],
