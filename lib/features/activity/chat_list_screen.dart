@@ -9,12 +9,7 @@ class ChatListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_note),
-          ),
-        ],
+        actions: [],
       ),
       body: ListView.builder(
         itemCount: 15,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
+import 'package:prozync/features/projects/project_details_screen.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -11,13 +12,18 @@ class ExploreScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TextField(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Explore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+              const SizedBox(height: 8),
+              Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search',
                 prefixIcon: const Icon(Icons.search),
@@ -32,6 +38,9 @@ class ExploreScreen extends StatelessWidget {
               ),
             ),
           ),
+            ],
+          ),
+          toolbarHeight: 100, // Increased height for title and search field
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Trending Projects'),
@@ -126,7 +135,7 @@ class TrendingProjectsView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Developer $index',
+                              'Project Name ${index + 1}',
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -135,7 +144,7 @@ class TrendingProjectsView extends StatelessWidget {
                                   ),
                             ),
                             Text(
-                              'Just now • Trending',
+                              'by Developer $index • Trending',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -152,13 +161,7 @@ class TrendingProjectsView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Project Name ${index + 1}',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
+
                 const SizedBox(height: 8),
                 const Text(
                   'An amazing project that solves real-world problems using advanced algorithms and clean architecture.',
@@ -166,26 +169,32 @@ class TrendingProjectsView extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildIconText(Icons.star_border, '${(index + 1) * 50}'),
-                    const SizedBox(width: 16),
-                    _buildIconText(Icons.fork_right, '${(index + 1) * 10}'),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'View Project',
-                        style: TextStyle(
-                            color: Colors.blue, fontWeight: FontWeight.bold),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProjectDetailsScreen(
+                            projectName: 'Project Name ${index + 1}',
+                            isPublic: true,
+                            description:
+                                'An amazing project that solves real-world problems using advanced algorithms and clean architecture.',
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.withOpacity(0.1),
+                      foregroundColor: Colors.blue,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                  ],
+                    child: const Text('View Details'),
+                  ),
                 ),
               ],
             ),

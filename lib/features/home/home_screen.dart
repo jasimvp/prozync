@@ -47,7 +47,7 @@ class HomeScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const ActivityScreen()),
               );
             },
-            icon: const Icon(Icons.favorite_border),
+            icon: const Icon(Icons.notifications_none_outlined),
           ),
           IconButton(
             onPressed: () {
@@ -148,24 +148,13 @@ class HomeScreen extends StatelessWidget {
                 const Text(
                   'Released with Kubernetes support! Deploy your apps to any cloud provider with zero config. Includes auto-scaling and health monitoring.',
                 ),
+
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Go',
-                        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    _buildIconText(Icons.star_border, '892'),
-                    const SizedBox(width: 12),
-                    _buildIconText(Icons.fork_right, '123'),
+                    _buildLanguageTag('Dart', Colors.blue),
+                    const SizedBox(width: 16),
+                    _buildLanguageTag('Flutter', Colors.blueAccent),
                   ],
                 ),
                 const Divider(height: 32),
@@ -206,6 +195,20 @@ class HomeScreen extends StatelessWidget {
           Text(text, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
         ],
       ),
+    );
+  }
+
+  Widget _buildLanguageTag(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

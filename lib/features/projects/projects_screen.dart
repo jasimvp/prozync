@@ -84,9 +84,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               color: Colors.grey,
             ),
             const SizedBox(width: 8),
-            Text(
-              project.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            Flexible(
+              child: Text(
+                project.name,
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
              const Spacer(),
             if (project.isMyRepo) // Only allow pinning my repos
@@ -118,8 +121,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               children: [
                 _buildLanguageTag(project.language, _getLanguageColor(project.language)),
                 const SizedBox(width: 8),
-                Text('Updated recently', style: Theme.of(context).textTheme.bodySmall), // simplified time
-                const Spacer(),
+                Expanded(
+                  child: Text(
+                    'Updated recently',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
