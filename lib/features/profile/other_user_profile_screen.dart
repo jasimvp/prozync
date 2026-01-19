@@ -27,18 +27,23 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       appBar: AppBar(
         title: Text(widget.userName),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            _buildProfileHeader(context),
-            const SizedBox(height: 24),
-            _buildStatsRow(context),
-            const SizedBox(height: 24),
-            _buildAboutSection(context),
-            const SizedBox(height: 24),
-            _buildWorksSection(context),
-          ],
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                _buildProfileHeader(context),
+                const SizedBox(height: 24),
+                _buildStatsRow(context),
+                const SizedBox(height: 24),
+                _buildAboutSection(context),
+                const SizedBox(height: 24),
+                _buildWorksSection(context),
+              ],
+            ),
+          ),
         ),
       ),
     );

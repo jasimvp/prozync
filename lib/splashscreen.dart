@@ -8,72 +8,110 @@ class Splashscreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          children: [
-            SizedBox(height: screenHeight * 0.15),
-            CircleAvatar(
-              radius: screenWidth * 0.25,
-              backgroundImage: const AssetImage('assets/icon/prozync.png'),
-            ),
-            SizedBox(height: screenHeight * 0.04),
-            Text(
-              'Hello !',
-              style: GoogleFonts.pacifico(
-                color: Colors.blue[900],
-                fontSize: screenWidth * 0.07,
-                fontWeight: FontWeight.w600,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
               ),
-            ),
-            SizedBox(height: screenHeight * 0.06),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[900],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo
+                      CircleAvatar(
+                        radius: constraints.maxWidth * 0.25,
+                        backgroundColor: Colors.transparent, // Ensure clean background
+                        backgroundImage: const AssetImage('assets/icon/prozync.png'),
+                      ),
+                      SizedBox(height: constraints.maxHeight * 0.04),
+                      
+                      // Welcome Text
+                      Text(
+                        'Hello !',
+                        style: GoogleFonts.pacifico(
+                          color: Colors.blue[900],
+                          fontSize: constraints.maxWidth * 0.09, // slightly larger for emphasis
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: constraints.maxHeight * 0.08),
+
+                      // Login Button
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 400), // Max width for wider screens
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[900],
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 5,
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                          child: Text(
+                            'LOGIN',
+                            style: TextStyle(
+                              fontSize: 18, 
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: constraints.maxHeight * 0.03),
+
+                      // Sign Up Button
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 400),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const Signupscreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue[900],
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            side: BorderSide(color: Colors.blue.shade900, width: 2),
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                          child: Text(
+                            'SIGN UP',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                minimumSize: Size(screenWidth * 0.6, screenHeight * 0.06),
-              ),
-              child: Text(
-                'LOGIN',
-                style: TextStyle(fontSize: screenWidth * 0.04),
               ),
             ),
-            SizedBox(height: screenHeight * 0.04),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Signupscreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue[900],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                minimumSize: Size(screenWidth * 0.6, screenHeight * 0.06),
-                side: BorderSide(color: Colors.blue.shade900, width: 2),
-              ),
-              child: Text(
-                'SIGN UP',
-                style: TextStyle(fontSize: screenWidth * 0.04),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
