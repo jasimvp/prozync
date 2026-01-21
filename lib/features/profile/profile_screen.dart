@@ -78,17 +78,31 @@ class ProfileScreen extends StatelessWidget {
           style: TextStyle(color: Colors.grey, fontSize: 16),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.email_outlined, size: 16, color: Colors.grey),
-            const SizedBox(width: 4),
-            const Text('shada@prozync.com', style: TextStyle(color: Colors.grey)),
-            const SizedBox(width: 16),
-            const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
-            const SizedBox(width: 4),
-            const Text('+1 234 567 890', style: TextStyle(color: Colors.grey)),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.email_outlined, size: 16, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text('shada@prozync.com', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
+                  SizedBox(width: 4),
+                  Text('+1 234 567 890', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -183,7 +197,19 @@ class ProfileScreen extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: const Icon(Icons.star, color: Colors.amber),
-                        title: Text(project.name),
+                        title: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                project.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildSmallTypeTag(project.projectType),
+                          ],
+                        ),
                         subtitle: Text(project.description, maxLines: 1, overflow: TextOverflow.ellipsis),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                         onTap: () {
@@ -197,6 +223,24 @@ class ProfileScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSmallTypeTag(String type) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        type,
+        style: const TextStyle(
+          color: Colors.blue,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

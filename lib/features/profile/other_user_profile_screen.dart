@@ -191,7 +191,19 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     isPublic ? Icons.folder_open : Icons.lock_outline,
                     color: isPublic ? Colors.blue : Colors.orange,
                   ),
-                  title: Text('Project XYZ ${index + 1}'),
+                  title: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Project XYZ ${index + 1}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildSmallTypeTag(index % 2 == 0 ? 'Web' : 'App'),
+                    ],
+                  ),
                   subtitle: Text(isPublic ? 'Public • Flutter' : 'Private • Secret'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
@@ -213,6 +225,24 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSmallTypeTag(String type) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        type,
+        style: const TextStyle(
+          color: Colors.blue,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

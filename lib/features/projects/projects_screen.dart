@@ -117,16 +117,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildLanguageTag(project.language, _getLanguageColor(project.language)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Updated recently',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                _buildTypeTag(project.projectType),
+                Text(
+                  'Updated recently',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 GestureDetector(
                   onTap: () {
@@ -185,6 +185,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
       ],
+    );
+  }
+
+  Widget _buildTypeTag(String type) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
+      child: Text(
+        type,
+        style: const TextStyle(
+          color: Colors.grey,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 

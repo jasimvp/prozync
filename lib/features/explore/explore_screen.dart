@@ -143,15 +143,40 @@ class TrendingProjectsView extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
-                            Text(
-                              'by Developer $index • Trending',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Colors.grey,
-                                    fontSize: 12,
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
                                   ),
+                                  child: Text(
+                                    index % 2 == 0 ? 'Web' : 'App',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'by Developer $index • Trending',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
