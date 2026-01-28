@@ -20,7 +20,7 @@ class ProfileService extends ChangeNotifier {
 
   Future<void> fetchProfiles({String? search}) async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final endpoint = search != null ? '/profiles/?search=$search' : '/profiles/';

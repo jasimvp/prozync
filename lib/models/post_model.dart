@@ -23,15 +23,17 @@ class Post {
 
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
-      id: json['id'],
-      user: json['user'],
-      username: json['username'],
+      id: json['id'] ?? 0,
+      user: json['user'] ?? 0,
+      username: json['username'] ?? 'User',
       project: json['project'],
       image: json['image'],
-      content: json['content'],
+      content: json['content'] ?? '',
       likeCount: json['like_count'] ?? 0,
       commentCount: json['comment_count'] ?? 0,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 

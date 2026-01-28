@@ -19,7 +19,7 @@ class ChatService extends ChangeNotifier {
 
   Future<void> fetchChats() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final response = await _apiService.get('/chats/');

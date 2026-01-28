@@ -421,7 +421,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
                                 final success = await _projectService.createProject({
                                   'project_name': nameController.text,
-                                  'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                                  'slug': nameController.text
+                                      .toLowerCase()
+                                      .trim()
+                                      .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
+                                      .replaceAll(RegExp(r'\s+'), '-'),
                                   'description': descController.text,
                                   'technology': 'Flutter',
                                   'is_private': 'false',

@@ -21,7 +21,7 @@ class ProjectService extends ChangeNotifier {
 
   Future<void> fetchProjects({String? search}) async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final endpoint = search != null ? '/projects/?search=$search' : '/projects/';

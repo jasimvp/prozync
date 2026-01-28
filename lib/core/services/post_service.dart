@@ -18,7 +18,7 @@ class PostService extends ChangeNotifier {
 
   Future<void> fetchPosts() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final response = await _apiService.get('/posts/');
@@ -60,10 +60,16 @@ class PostService extends ChangeNotifier {
     try {
       final response = await _apiService.post('/posts/$id/like/', {});
       if (response.statusCode == 200) {
-        final updatedPost = Post.fromJson(jsonDecode(response.body));
+        final body = jsonDecode(response.body);
         final index = _posts.indexWhere((p) => p.id == id);
         if (index != -1) {
-          _posts[index] = updatedPost;
+          if (body is Map && body.containsKey('id')) {
+            _posts[index] = Post.fromJson(body as Map<String, dynamic>);
+          } else {
+            // If API only returns a message, we might need to manually toggle or re-fetch
+            // But let's assume if it only returns detail, we just re-fetch this post or refresh all
+            fetchPosts(); 
+          }
           notifyListeners();
         }
       }
