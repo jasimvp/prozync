@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/main.dart';
 import 'package:prozync/features/profile/saved_projects_screen.dart';
+import 'package:prozync/core/services/auth_service.dart';
+import 'package:prozync/splashscreen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -73,8 +75,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+            onTap: () async {
+              await AuthService().logout();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const Splashscreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],

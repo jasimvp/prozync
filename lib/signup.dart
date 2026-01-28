@@ -31,10 +31,10 @@ class _SignupscreenState extends State<Signupscreen> {
     setState(() => _isLoading = true);
     
     final result = await _authService.signup({
-      'email': _emailController.text,
-      'username': _usernameController.text,
-      'full_name': _fullNameController.text,
-      'password': _passwordController.text,
+      'email': _emailController.text.trim(),
+      'username': _usernameController.text.trim(),
+      'full_name': _fullNameController.text.trim(),
+      'password': _passwordController.text.trim(),
     });
 
     if (mounted) setState(() => _isLoading = false);

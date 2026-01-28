@@ -6,19 +6,31 @@ import '../../models/auth_model.dart';
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  Future<AuthToken?> login(String username, String password) async {
-    final response = await _apiService.post(
-      '/auth/login/',
-      {'username': username, 'password': password},
-      isUrlEncoded: true,
-    );
+  Future<Map<String, dynamic>> login(String username, String password) async {
+    try {
+      final response = await _apiService.post(
+        '/auth/login/',
+        {'username': username, 'password': password},
+        isUrlEncoded: true,
+      );
 
-    if (response.statusCode == 200) {
-      final token = AuthToken.fromJson(jsonDecode(response.body));
-      await _apiService.saveToken(token.token);
-      return token;
+      if (response.statusCode == 200) {
+        final token = AuthToken.fromJson(jsonDecode(response.body));
+        await _apiService.saveToken(token.token);
+        return {'success': true, 'token': token};
+      } else {
+        String message = 'Invalid credentials';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map) {
+            message = errorData['detail'] ?? errorData['message'] ?? errorData.values.first.toString();
+          }
+        } catch (_) {}
+        return {'success': false, 'message': message};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error'};
     }
-    return null;
   }
 
   Future<Map<String, dynamic>> signup(Map<String, dynamic> data) async {
@@ -55,8 +67,8 @@ class AuthService {
 
   Future<bool> forgotPassword(String email) async {
     try {
-      final response = await _apiService.post('/auth/forgot-password/', {'email': email});
-      return response.statusCode == 200;
+      final response = await _apiService.post('/auth/password-reset/', {'email': email});
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Forgot Password Error: $e');
       return false;
@@ -65,9 +77,13 @@ class AuthService {
 
   Future<bool> resetPassword(Map<String, dynamic> data) async {
     try {
-      // API expects: email, otp, new_password
-      final response = await _apiService.post('/auth/reset-password/', data);
-      return response.statusCode == 200;
+      // API might expect: email, otp, password (or new_password)
+      final response = await _apiService.post('/auth/password-reset-confirm/', {
+        'email': data['email'],
+        'otp': data['otp'],
+        'password': data['new_password'],
+      });
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Reset Password Error: $e');
       return false;
@@ -75,6 +91,15 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    try {
+      final token = await _apiService.getToken();
+      if (token != null) {
+        // Attempt to notify server, but ignore errors if it fails
+        await _apiService.post('/auth/logout/', {});
+      }
+    } catch (e) {
+      debugPrint('Logout error (server side): $e');
+    }
     await _apiService.clearToken();
   }
 

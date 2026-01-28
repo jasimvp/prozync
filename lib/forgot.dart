@@ -32,11 +32,17 @@ class _ForgotScreenState extends State<ForgotScreen> {
       if (success) {
         setState(() => _otpSent = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP sent to your email')),
+          const SnackBar(
+            content: Text('OTP sent to your email'),
+            backgroundColor: Colors.green,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send OTP. Please check your email.')),
+          const SnackBar(
+            content: Text('Failed to send OTP. Account may not exist or server error.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -57,7 +63,10 @@ class _ForgotScreenState extends State<ForgotScreen> {
       setState(() => _isLoading = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset successfully! Please login.')),
+          const SnackBar(
+            content: Text('Password reset successfully! Please login.'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pushReplacement(
           context,
@@ -65,7 +74,10 @@ class _ForgotScreenState extends State<ForgotScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reset failed. Invalid OTP or password requirements not met.')),
+          const SnackBar(
+            content: Text('Reset failed. Check your OTP and password requirements.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

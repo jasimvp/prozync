@@ -30,14 +30,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     
     // API expects username, using email as username for now as per common pattern
-    final token = await _authService.login(
-      _emailController.text,
-      _passwordController.text,
+    final result = await _authService.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
     );
-
+ 
     setState(() => _isLoading = false);
-
-    if (token != null) {
+ 
+    if (result['success']) {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -47,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login failed. Please check your credentials.')),
+          SnackBar(content: Text(result['message'] ?? 'Login failed. Please check your credentials.')),
         );
       }
     }
@@ -102,7 +102,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: 'Username or Email',
+                    labelText: 'Username',
+                    helperText: 'Use the username you created during signup',
                     prefixIcon: Icon(
                       Icons.person_outline,
                       color: Colors.blue[900],
