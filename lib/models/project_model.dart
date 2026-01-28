@@ -7,11 +7,13 @@ class Project {
   final String description;
   final String technology;
   final String? projectZip;
+  final String? coverImage;
   final String? readme;
   final bool isPrivate;
   final String collaboratorCount;
+  final List<dynamic> collaborators;
   final DateTime createdAt;
-  bool isPinned; // Local state or UI check
+  bool isPinned;
 
   Project({
     required this.id,
@@ -22,9 +24,11 @@ class Project {
     required this.description,
     required this.technology,
     this.projectZip,
+    this.coverImage,
     this.readme,
     required this.isPrivate,
     required this.collaboratorCount,
+    this.collaborators = const [],
     required this.createdAt,
     this.isPinned = false,
   });
@@ -32,9 +36,9 @@ class Project {
   // UI Compatibility Getters
   String get name => projectName;
   String get language => technology;
-  String get projectType => "Repo"; // Default
+  String get projectType => "Repo";
   DateTime get lastUpdated => createdAt;
-  bool get isMyRepo => true; // This will depend on the current user matching owner ID
+  bool get isMyRepo => true;
 
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
@@ -46,9 +50,11 @@ class Project {
       description: json['description'] ?? '',
       technology: json['technology'] ?? '',
       projectZip: json['project_zip'],
+      coverImage: json['cover_image'],
       readme: json['readme'],
       isPrivate: json['is_private'] ?? false,
       collaboratorCount: json['collaborator_count'].toString(),
+      collaborators: json['collaborators'] ?? [],
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -61,6 +67,7 @@ class Project {
       'description': description,
       'technology': technology,
       'project_zip': projectZip,
+      'cover_image': coverImage,
       'readme': readme,
       'is_private': isPrivate,
     };

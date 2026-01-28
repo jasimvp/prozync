@@ -34,9 +34,16 @@ class _SplashscreenState extends State<Splashscreen> {
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else {
-        // If profile fetch fails (e.g. invalid token), stay on splash to allow re-login
-        // ProfileService already clears the token on 401
+        // If profile fetch fails (e.g. invalid token), go to login
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
       }
+    } else if (mounted) {
+      // Not logged in, go to home splash view (existing buttons will lead to login/signup)
     }
   }
 

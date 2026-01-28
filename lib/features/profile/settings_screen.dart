@@ -30,12 +30,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => _showChangePasswordDialog(context),
           ),
           ListTile(
-            leading: const Icon(Icons.email_outlined),
-            title: const Text('Update Email'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
             leading: const Icon(Icons.bookmark_border),
             title: const Text('Saved Projects'),
             trailing: const Icon(Icons.chevron_right),

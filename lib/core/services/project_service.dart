@@ -58,9 +58,9 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Future<Project?> createProject(Map<String, String> data, {http.MultipartFile? file}) async {
+  Future<Project?> createProject(Map<String, String> data, {List<http.MultipartFile>? files}) async {
     try {
-      final response = await _apiService.postMultipart('/projects/', data, file: file);
+      final response = await _apiService.postMultipart('/projects/', data, files: files);
       if (response.statusCode == 201) {
         final project = Project.fromJson(jsonDecode(response.body));
         _projects.insert(0, project);
@@ -96,6 +96,16 @@ class ProjectService extends ChangeNotifier {
     if (index != -1) {
       _projects[index].isPinned = !_projects[index].isPinned;
       notifyListeners();
+    }
+  }
+
+  Future<bool> sendCollabInvitation(int projectId, int userId) async {
+    try {
+      final response = await _apiService.post('/projects/$projectId/invite/', {'user_id': userId});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error sending invitation: $e');
+      return false;
     }
   }
 }

@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:prozync/features/activity/chat_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
 import 'package:prozync/models/project_model.dart';
+import 'package:prozync/models/profile_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
+import 'package:prozync/core/services/profile_service.dart';
+import 'package:prozync/core/services/project_service.dart';
 
 class OtherUserProfileScreen extends StatefulWidget {
-  final String userName;
-  final String userDesignation;
-  final String userImage;
+  final Profile profile;
 
   const OtherUserProfileScreen({
     super.key,
-    required this.userName,
-    required this.userDesignation,
-    required this.userImage,
+    required this.profile,
   });
 
   @override
@@ -22,6 +21,29 @@ class OtherUserProfileScreen extends StatefulWidget {
 
 class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   bool isFollowing = false;
+  List<Project> userProjects = [];
+  bool isLoadingProjects = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProjects();
+  }
+
+  Future<void> _loadUserProjects() async {
+    try {
+      // Assuming Search by username or owner ID works for fetching specific user projects
+      final allProjects = await ProjectService().fetchProjects(search: widget.profile.username);
+      if (mounted) {
+        setState(() {
+          userProjects = ProjectService().projects.where((p) => p.owner == widget.profile.id).toList();
+          isLoadingProjects = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => isLoadingProjects = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,12 +126,13 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(widget.userImage),
+                    backgroundImage: widget.profile.profilePic != null ? NetworkImage(widget.profile.profilePic!) : null,
+                    child: widget.profile.profilePic == null ? Icon(Icons.person, size: 60, color: Colors.grey[400]) : null,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  widget.userName,
+                  widget.profile.fullName,
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -117,7 +140,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   ),
                 ),
                 Text(
-                  widget.userDesignation,
+                  widget.profile.profession,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 16,
@@ -131,7 +154,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     Icon(Icons.location_on_outlined, size: 14, color: Colors.blue[200]),
                     const SizedBox(width: 4),
                     Text(
-                      'San Francisco, CA', // Placeholder
+                      'Remote', // You might want to add location to Profile model if available
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 14,
@@ -156,10 +179,13 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    isFollowing = !isFollowing;
-                  });
+                onPressed: () async {
+                  final success = await ProfileService().followProfile(widget.profile.id);
+                  if (success && mounted) {
+                    setState(() {
+                      isFollowing = !isFollowing;
+                    });
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isFollowing ? Colors.grey[200] : AppTheme.primaryColor,
@@ -184,9 +210,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
-                        chatId: 0, // Placeholder
-                        userName: widget.userName,
-                        userImage: widget.userImage,
+                        chatId: 0, // In a real app, you'd fetch or create a conversation
+                        userName: widget.profile.fullName,
+                        userImage: widget.profile.profilePic ?? '',
                       ),
                     ),
                   );
@@ -224,11 +250,11 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem(context, '24', 'Projects')),
+          Expanded(child: _buildStatItem(context, widget.profile.repoCount, 'Projects')),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, '450', 'Followers')),
+          Expanded(child: _buildStatItem(context, widget.profile.followerCount, 'Followers')),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, '180', 'Following')),
+          Expanded(child: _buildStatItem(context, widget.profile.followingCount, 'Following')),
         ],
       ),
     );
@@ -285,7 +311,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
             child: Text(
-              'Creative lead and software enthusiast. Passionate about building seamless digital experiences and mentoring upcoming developers. Currently focused on distributed systems and intuitive UI design.',
+              widget.profile.bio.isNotEmpty ? widget.profile.bio : 'No bio provided.',
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: 15,
@@ -309,30 +335,20 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          ListView.builder(
-            shrinkWrap: true,
-            padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 2,
-            itemBuilder: (context, index) {
-              final isPublic = index % 2 == 0;
-              final project = Project(
-                id: index,
-                owner: 0,
-                ownerName: widget.userName,
-                projectName: 'Project XYZ ${index + 1}',
-                slug: 'project-xyz-${index + 1}',
-                description: isPublic 
-                    ? 'This is a public research project exploring new technologies.'
-                    : 'Contidential internal project. Access restricted.',
-                technology: index % 2 == 0 ? 'Flutter' : 'React',
-                isPrivate: !isPublic,
-                collaboratorCount: '0',
-                createdAt: DateTime.now(),
-              );
-              return _buildProjectItem(context, project);
-            },
-          ),
+          if (isLoadingProjects)
+            const Center(child: CircularProgressIndicator())
+          else if (userProjects.isEmpty)
+            Text('No works published yet.', style: TextStyle(color: Colors.grey[500]))
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: userProjects.length,
+              itemBuilder: (context, index) {
+                return _buildProjectItem(context, userProjects[index]);
+              },
+            ),
         ],
       ),
     );
@@ -360,11 +376,16 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           decoration: BoxDecoration(
             color: (project.isPrivate ? Colors.orange : Colors.blue).withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
+            image: project.coverImage != null 
+                ? DecorationImage(image: NetworkImage(project.coverImage!), fit: BoxFit.cover) 
+                : null,
           ),
-          child: Icon(
-            project.isPrivate ? Icons.lock_outline : Icons.code_rounded,
-            color: project.isPrivate ? Colors.orange : Colors.blue,
-          ),
+          child: project.coverImage == null 
+              ? Icon(
+                  project.isPrivate ? Icons.lock_outline : Icons.code_rounded,
+                  color: project.isPrivate ? Colors.orange : Colors.blue,
+                )
+              : null,
         ),
         title: Text(
           project.name,

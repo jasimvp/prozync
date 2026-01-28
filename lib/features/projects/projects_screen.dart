@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
@@ -63,7 +65,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 : TabBarView(
                     children: [
                       _buildProjectList(context, projects: _projectService.myRepos),
-                      _buildProjectList(context, projects: _projectService.projects.where((p) => p.ownerName != 'DevUser').toList()),
+                      _buildProjectList(context, projects: _projectService.projects.where((p) => 
+                        p.owner != ProfileService().myProfile?.id && 
+                        p.collaborators.any((c) => (c is Map ? c['id'] : c) == ProfileService().myProfile?.id)
+                      ).toList()),
                     ],
                   ),
           ),
@@ -268,17 +273,31 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OtherUserProfileScreen(
-                              userName: project.ownerName,
-                              userDesignation: 'Developer',
-                              userImage: 'https://ui-avatars.com/api/?name=${project.ownerName}&background=random',
-                            ),
-                          ),
+                      onTap: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(child: CircularProgressIndicator()),
                         );
+
+                        try {
+                          await ProfileService().fetchProfiles(search: project.ownerName);
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            final profile = ProfileService().profiles.firstWhere((p) => p.id == project.owner);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OtherUserProfileScreen(profile: profile),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+                          }
+                        }
                       },
                       child: Row(
                         children: [
@@ -358,8 +377,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     String? selectedFileName;
     String? selectedFilePath;
     dynamic selectedFileBytes;
+    XFile? selectedCoverImage;
+    Uint8List? selectedCoverImageBytes;
     bool isUploading = false;
     bool isPrivate = false;
+    final _imagePicker = ImagePicker();
 
     showModalBottomSheet(
       context: context,
@@ -416,6 +438,45 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           },
                           contentPadding: EdgeInsets.zero,
                           secondary: Icon(isPrivate ? Icons.lock_outline : Icons.public_outlined, color: Colors.blue),
+                        ),
+                        const SizedBox(height: 24),
+                        const SizedBox(height: 24),
+                        const Text('Cover Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () async {
+                            final image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                            if (image != null) {
+                              setModalState(() => selectedCoverImage = image);
+                            }
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                              image: selectedCoverImage != null
+                                  ? DecorationImage(
+                                      image: kIsWeb 
+                                          ? NetworkImage(selectedCoverImage!.path) 
+                                          : FileImage(File(selectedCoverImage!.path)) as ImageProvider,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: selectedCoverImage == null
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.blue[300]),
+                                      const SizedBox(height: 8),
+                                      const Text('Pick a cover image', style: TextStyle(color: Colors.grey)),
+                                    ],
+                                  )
+                                : null,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         const Text('Source Code (ZIP)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -476,11 +537,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
                               setModalState(() => isUploading = true);
 
-                              http.MultipartFile? multipartFile;
+                              List<http.MultipartFile> files = [];
+
                               if (kIsWeb && selectedFileBytes != null) {
-                                multipartFile = http.MultipartFile.fromBytes('project_zip', selectedFileBytes, filename: selectedFileName);
+                                files.add(http.MultipartFile.fromBytes('project_zip', selectedFileBytes, filename: selectedFileName));
                               } else if (!kIsWeb && selectedFilePath != null) {
-                                multipartFile = await http.MultipartFile.fromPath('project_zip', selectedFilePath!);
+                                files.add(await http.MultipartFile.fromPath('project_zip', selectedFilePath!));
+                              }
+
+                              if (selectedCoverImage != null) {
+                                if (kIsWeb) {
+                                  final bytes = await selectedCoverImage!.readAsBytes();
+                                  files.add(http.MultipartFile.fromBytes('cover_image', bytes, filename: selectedCoverImage!.name));
+                                } else {
+                                  files.add(await http.MultipartFile.fromPath('cover_image', selectedCoverImage!.path));
+                                }
                               }
 
                                 final success = await _projectService.createProject({
@@ -495,7 +566,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   'technology': techController.text,
                                   'is_private': isPrivate.toString(),
                                   if (ProfileService().myProfile != null) 'owner': ProfileService().myProfile!.id.toString(),
-                                }, file: multipartFile);
+                                }, files: files);
 
                               if (context.mounted) {
                                 Navigator.pop(context);

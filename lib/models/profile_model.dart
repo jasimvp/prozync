@@ -8,6 +8,7 @@ class Profile {
   final String profession;
   final String? profilePic;
   final String followerCount;
+  final String followingCount;
   final String repoCount;
 
   Profile({
@@ -20,6 +21,7 @@ class Profile {
     required this.profession,
     this.profilePic,
     required this.followerCount,
+    required this.followingCount,
     required this.repoCount,
   });
 
@@ -34,6 +36,7 @@ class Profile {
       profession: json['profession'] ?? '',
       profilePic: json['profile_pic'],
       followerCount: (json['follower_count'] ?? 0).toString(),
+      followingCount: (json['following_count'] ?? 0).toString(),
       repoCount: (json['repo_count'] ?? 0).toString(),
     );
   }

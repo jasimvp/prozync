@@ -40,6 +40,12 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<void> fetchMessages(int chatId) async {
+    if (chatId <= 0) {
+      _generateMockMessages();
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -47,7 +53,6 @@ class ChatService extends ChangeNotifier {
       final response = await _apiService.get('/chats/$chatId/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        // Assuming current user ID logic is handled or we use a placeholder for now
         _currentMessages = data.map((json) => Message.fromJson(json, 0)).toList();
       } else {
         _generateMockMessages();
@@ -62,16 +67,18 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<bool> sendMessage(int chatId, String text) async {
-    try {
-      final response = await _apiService.post('/chats/$chatId/messages/', {'text': text});
-      if (response.statusCode == 201) {
-        final newMessage = Message.fromJson(jsonDecode(response.body), 0);
-        _currentMessages.add(newMessage);
-        notifyListeners();
-        return true;
+    if (chatId > 0) {
+      try {
+        final response = await _apiService.post('/chats/$chatId/messages/', {'text': text});
+        if (response.statusCode == 201) {
+          final newMessage = Message.fromJson(jsonDecode(response.body), 0);
+          _currentMessages.add(newMessage);
+          notifyListeners();
+          return true;
+        }
+      } catch (e) {
+        debugPrint('Error sending message: $e');
       }
-    } catch (e) {
-      debugPrint('Error sending message: $e');
     }
     
     // Mock success for UI demo

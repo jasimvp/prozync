@@ -90,15 +90,15 @@ class ApiService {
     );
   }
 
-  Future<http.Response> postMultipart(String endpoint, Map<String, String> fields, {http.MultipartFile? file}) async {
-    return _sendMultipart('POST', endpoint, fields, file: file);
+  Future<http.Response> postMultipart(String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
+    return _sendMultipart('POST', endpoint, fields, files: files);
   }
 
-  Future<http.Response> patchMultipart(String endpoint, Map<String, String> fields, {http.MultipartFile? file}) async {
-    return _sendMultipart('PATCH', endpoint, fields, file: file);
+  Future<http.Response> patchMultipart(String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
+    return _sendMultipart('PATCH', endpoint, fields, files: files);
   }
 
-  Future<http.Response> _sendMultipart(String method, String endpoint, Map<String, String> fields, {http.MultipartFile? file}) async {
+  Future<http.Response> _sendMultipart(String method, String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
     final request = http.MultipartRequest(method, url);
@@ -109,13 +109,17 @@ class ApiService {
     });
     
     request.fields.addAll(fields);
-    if (file != null) {
-      request.files.add(file);
+    if (files != null) {
+      request.files.addAll(files);
     }
     
     print('MULTIPART $method Request: $url');
     print('MULTIPART Fields: $fields');
-    if (file != null) print('MULTIPART File: ${file.filename} (${file.length} bytes)');
+    if (files != null) {
+      for (var file in files) {
+        print('MULTIPART File: ${file.field} - ${file.filename} (${file.length} bytes)');
+      }
+    }
     
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);

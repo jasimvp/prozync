@@ -8,10 +8,31 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
+      // Trying documented /auth/login/ which is form-encoded
       final response = await _apiService.post(
         '/auth/login/',
         {'username': username, 'password': password},
         isUrlEncoded: true,
+      );
+
+      if (response.statusCode == 200) {
+        final token = AuthToken.fromJson(jsonDecode(response.body));
+        await _apiService.saveToken(token.token);
+        return {'success': true, 'token': token};
+      } else {
+        // Fallback to /auth/signin/ if /login/ fails or isn't handling JSON
+        return await signin(username, password);
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error'};
+    }
+  }
+
+  Future<Map<String, dynamic>> signin(String username, String password) async {
+    try {
+      final response = await _apiService.post(
+        '/auth/signin/',
+        {'username': username, 'password': password},
       );
 
       if (response.statusCode == 200) {
@@ -35,7 +56,6 @@ class AuthService {
 
   Future<Map<String, dynamic>> signup(Map<String, dynamic> data) async {
     try {
-      // API expects: username, email, password, full_name
       final response = await _apiService.post('/auth/signup/', {
         'username': data['username'],
         'email': data['email'],
@@ -48,12 +68,11 @@ class AuthService {
       } else {
         String errorMessage = 'Signup failed';
         try {
-          final errorData = jsonDecode(response.body);
-          // Handle Django list-style errors or map errors
-          if (errorData is Map) {
-            errorMessage = errorData['message'] ?? errorData['error'] ?? errorData.values.first.toString();
-          } else {
-            errorMessage = errorData.toString();
+          if (response.body.isNotEmpty) {
+            final errorData = jsonDecode(response.body);
+            if (errorData is Map) {
+              errorMessage = errorData['detail'] ?? errorData['message'] ?? errorData.values.first.toString();
+            }
           }
         } catch (_) {
           errorMessage = 'Server error: ${response.statusCode}';
@@ -61,13 +80,13 @@ class AuthService {
         return {'success': false, 'message': errorMessage};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: ${e.toString()}'};
+      return {'success': false, 'message': 'Network error'};
     }
   }
 
   Future<bool> forgotPassword(String email) async {
     try {
-      final response = await _apiService.post('/auth/password-reset/', {'email': email});
+      final response = await _apiService.post('/auth/forgot-password/', {'email': email});
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Forgot Password Error: $e');
@@ -77,11 +96,10 @@ class AuthService {
 
   Future<bool> resetPassword(Map<String, dynamic> data) async {
     try {
-      // API might expect: email, otp, password (or new_password)
-      final response = await _apiService.post('/auth/password-reset-confirm/', {
+      final response = await _apiService.post('/auth/reset-password/', {
         'email': data['email'],
         'otp': data['otp'],
-        'password': data['new_password'],
+        'new_password': data['new_password'],
       });
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {

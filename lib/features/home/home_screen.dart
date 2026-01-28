@@ -519,16 +519,31 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'just now';
   }
 
-  void _navigateToProfile(BuildContext context, Post post) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OtherUserProfileScreen(
-          userName: post.username,
-          userDesignation: 'Developer',
-          userImage: 'https://ui-avatars.com/api/?name=${post.username}&background=random',
-        ),
-      ),
+  void _navigateToProfile(BuildContext context, Post post) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      await ProfileService().fetchProfiles(search: post.username);
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading
+        final profile = ProfileService().profiles.firstWhere((p) => p.user == post.user);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtherUserProfileScreen(profile: profile),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+      }
+    }
   }
 }

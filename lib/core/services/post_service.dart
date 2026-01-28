@@ -42,7 +42,7 @@ class PostService extends ChangeNotifier {
         if (userId != null) 'user': userId.toString(),
       };
       
-      final response = await _apiService.postMultipart('/posts/', fields, file: imageFile);
+      final response = await _apiService.postMultipart('/posts/', fields, files: imageFile != null ? [imageFile] : null);
       
       if (response.statusCode == 201) {
         final post = Post.fromJson(jsonDecode(response.body));

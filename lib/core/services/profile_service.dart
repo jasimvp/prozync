@@ -63,15 +63,16 @@ class ProfileService extends ChangeNotifier {
     return false;
   }
 
-  Future<void> fetchProfileById(int id) async {
+  Future<Profile?> fetchProfileById(int id) async {
     try {
       final response = await _apiService.get('/profiles/$id/');
       if (response.statusCode == 200) {
-        // Handle single profile fetch
+        return Profile.fromJson(jsonDecode(response.body));
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
     }
+    return null;
   }
 
   Future<bool> updateProfile(Map<String, dynamic> data, {http.MultipartFile? profilePic}) async {
@@ -81,7 +82,7 @@ class ProfileService extends ChangeNotifier {
       if (profilePic != null) {
         // Convert map values to strings for multipart fields
         final Map<String, String> fields = data.map((key, value) => MapEntry(key, value.toString()));
-        response = await _apiService.patchMultipart('/profiles/me/', fields, file: profilePic);
+        response = await _apiService.patchMultipart('/profiles/me/', fields, files: profilePic != null ? [profilePic] : null);
       } else {
         response = await _apiService.patch('/profiles/me/', data);
       }

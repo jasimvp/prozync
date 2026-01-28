@@ -155,17 +155,32 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OtherUserProfileScreen(
-                          userName: project.ownerName,
-                          userDesignation: 'Contributor',
-                          userImage: 'https://ui-avatars.com/api/?name=${project.ownerName}&background=random',
-                        ),
-                      ),
+                  onTap: () async {
+                    // Show loading
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(child: CircularProgressIndicator()),
                     );
+
+                    try {
+                      await ProfileService().fetchProfiles(search: project.ownerName);
+                      if (context.mounted) {
+                        Navigator.pop(context); // Remove loading
+                        final profile = ProfileService().profiles.firstWhere((p) => p.id == project.owner);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OtherUserProfileScreen(profile: profile),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.pop(context); // Remove loading
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+                      }
+                    }
                   },
                   child: Row(
                     children: [
@@ -348,11 +363,7 @@ class _DevelopersListViewState extends State<DevelopersListView> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => OtherUserProfileScreen(
-                        userName: profile.fullName,
-                        userDesignation: profile.profession,
-                        userImage: profile.profilePic ?? 'https://ui-avatars.com/api/?name=${profile.fullName}&background=random',
-                      ),
+                      builder: (context) => OtherUserProfileScreen(profile: profile),
                     ),
                   );
                 },
