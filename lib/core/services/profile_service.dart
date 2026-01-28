@@ -37,14 +37,22 @@ class ProfileService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchMyProfile() async {
+  Future<bool> fetchMyProfile() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final response = await _apiService.get('/profiles/me/');
       if (response.statusCode == 200) {
         _myProfile = Profile.fromJson(jsonDecode(response.body));
+        return true;
+      } else if (response.statusCode == 401) {
+        // Token is invalid or expired
+        await _apiService.clearToken();
+        _myProfile = null;
+      } else {
+        debugPrint('Profile fetch failed with status: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
       }
     } catch (e) {
       debugPrint('Error fetching my profile: $e');
@@ -52,6 +60,7 @@ class ProfileService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+    return false;
   }
 
   Future<void> fetchProfileById(int id) async {

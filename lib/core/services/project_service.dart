@@ -41,7 +41,7 @@ class ProjectService extends ChangeNotifier {
 
   Future<void> fetchMyRepos() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final response = await _apiService.get('/projects/my_repos/');

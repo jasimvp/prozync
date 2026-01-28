@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/core/theme/app_theme.dart';
+import 'package:prozync/core/services/profile_service.dart';
+import 'package:prozync/core/services/project_service.dart';
 import '../../models/project_model.dart';
 
 class ProjectDetailsScreen extends StatelessWidget {
@@ -15,6 +17,7 @@ class ProjectDetailsScreen extends StatelessWidget {
     bool isPublic = !project.isPrivate;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 900;
+    final isOwner = ProfileService().myProfile?.id == project.owner;
 
     return Scaffold(
       body: CustomScrollView(
@@ -62,10 +65,62 @@ class ProjectDetailsScreen extends StatelessWidget {
                 icon: const Icon(Icons.share_outlined, color: Colors.white),
                 onPressed: () {},
               ),
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onPressed: () {},
-              ),
+              if (isOwner)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onSelected: (value) async {
+                    if (value == 'delete') {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Project'),
+                          content: const Text('Are you sure you want to delete this project? This action cannot be undone.'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        final success = await ProjectService().deleteProject(project.id);
+                        if (context.mounted) {
+                          if (success) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Project deleted')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to delete project')),
+                            );
+                          }
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          SizedBox(width: 8),
+                          Text('Delete Project', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onPressed: () {},
+                ),
             ],
           ),
 
@@ -180,21 +235,16 @@ class ProjectDetailsScreen extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.all(20),
                             child: Text(
-                              isPublic
-                                  ? '# ${project.name}\n\n'
-                                      'Slug: ${project.slug}\n\n'
-                                      'This is a professional project README sync\'d from ProSync.\n\n'
-                                      '## Getting Started\n'
-                                      '1. Clone the repo\n'
-                                      '2. Run `flutter pub get`\n'
-                                      '3. Run the app\n\n'
-                                      '## Status\n'
-                                      '- Active Contributors: ${project.collaboratorCount}'
+                              !project.isPrivate
+                                  ? (project.readme != null && project.readme!.isNotEmpty
+                                      ? project.readme!
+                                      : '# ${project.name}\n\n'
+                                          'No README content provided for this project.')
                                   : 'This project is private. README content is restricted to authorized collaborators only.',
                               style: TextStyle(
                                 fontFamily: 'monospace',
-                                color: isPublic ? Colors.black87 : Colors.grey[600],
-                                fontStyle: isPublic ? FontStyle.normal : FontStyle.italic,
+                                color: (!project.isPrivate && project.readme != null && project.readme!.isNotEmpty) ? Colors.black87 : Colors.grey[600],
+                                fontStyle: (!project.isPrivate && project.readme != null && project.readme!.isNotEmpty) ? FontStyle.normal : FontStyle.italic,
                                 fontSize: 14,
                                 height: 1.5,
                               ),

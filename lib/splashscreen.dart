@@ -25,13 +25,18 @@ class _SplashscreenState extends State<Splashscreen> {
   void _checkAuth() async {
     final isLoggedIn = await _authService.isLoggedIn();
     if (isLoggedIn && mounted) {
-      // Prefetch profile to ensure user IDs are available
-      ProfileService().fetchMyProfile();
+      // Prefetch profile and verify token
+      final success = await ProfileService().fetchMyProfile();
       
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-      );
+      if (success && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      } else {
+        // If profile fetch fails (e.g. invalid token), stay on splash to allow re-login
+        // ProfileService already clears the token on 401
+      }
     }
   }
 

@@ -299,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPostCard(BuildContext context, Post post) {
+    final isOwner = ProfileService().myProfile?.id == post.user;
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
@@ -345,7 +346,52 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz_rounded, color: Colors.grey[400])),
+                if (isOwner)
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_horiz_rounded, color: Colors.grey[400]),
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Post'),
+                            content: const Text('Are you sure you want to delete this post?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await _postService.deletePost(post.id);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Post deleted')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz_rounded, color: Colors.grey[400])),
               ],
             ),
           ),

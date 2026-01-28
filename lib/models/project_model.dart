@@ -7,6 +7,7 @@ class Project {
   final String description;
   final String technology;
   final String? projectZip;
+  final String? readme;
   final bool isPrivate;
   final String collaboratorCount;
   final DateTime createdAt;
@@ -21,6 +22,7 @@ class Project {
     required this.description,
     required this.technology,
     this.projectZip,
+    this.readme,
     required this.isPrivate,
     required this.collaboratorCount,
     required this.createdAt,
@@ -44,6 +46,7 @@ class Project {
       description: json['description'] ?? '',
       technology: json['technology'] ?? '',
       projectZip: json['project_zip'],
+      readme: json['readme'],
       isPrivate: json['is_private'] ?? false,
       collaboratorCount: json['collaborator_count'].toString(),
       createdAt: DateTime.parse(json['created_at']),
@@ -58,6 +61,7 @@ class Project {
       'description': description,
       'technology': technology,
       'project_zip': projectZip,
+      'readme': readme,
       'is_private': isPrivate,
     };
   }

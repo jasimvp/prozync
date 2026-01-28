@@ -66,8 +66,6 @@ class PostService extends ChangeNotifier {
           if (body is Map && body.containsKey('id')) {
             _posts[index] = Post.fromJson(body as Map<String, dynamic>);
           } else {
-            // If API only returns a message, we might need to manually toggle or re-fetch
-            // But let's assume if it only returns detail, we just re-fetch this post or refresh all
             fetchPosts(); 
           }
           notifyListeners();
@@ -76,5 +74,19 @@ class PostService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error liking post: $e');
     }
+  }
+
+  Future<bool> deletePost(int id) async {
+    try {
+      final response = await _apiService.delete('/posts/$id/');
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        _posts.removeWhere((p) => p.id == id);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error deleting post: $e');
+    }
+    return false;
   }
 }

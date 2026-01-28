@@ -25,16 +25,16 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
-      id: json['id'],
-      user: json['user'],
+      id: json['id'] ?? 0,
+      user: json['user'] ?? 0,
       username: json['username'] ?? '',
       fullName: json['full_name'] ?? '',
       phone: json['phone'] ?? '',
       bio: json['bio'] ?? '',
       profession: json['profession'] ?? '',
       profilePic: json['profile_pic'],
-      followerCount: json['follower_count'].toString(),
-      repoCount: json['repo_count'].toString(),
+      followerCount: (json['follower_count'] ?? 0).toString(),
+      repoCount: (json['repo_count'] ?? 0).toString(),
     );
   }
 

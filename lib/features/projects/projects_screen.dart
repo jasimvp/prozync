@@ -117,6 +117,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Widget _buildProjectCard(BuildContext context, Project project) {
+    final isOwner = ProfileService().myProfile?.id == project.owner;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -196,7 +197,51 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         ],
                       ),
                     ),
-                    if (project.ownerName == 'DevUser')
+                    if (isOwner)
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_horiz, color: Colors.grey[400]),
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Project'),
+                                content: const Text('Are you sure you want to delete this project?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await _projectService.deleteProject(project.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Project deleted')),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                SizedBox(width: 8),
+                                Text('Delete', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    else
                       IconButton(
                         icon: Icon(
                           project.isPinned ? Icons.star : Icons.star_border,
@@ -308,10 +353,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void _showUploadBottomSheet(BuildContext context) {
     final nameController = TextEditingController();
     final descController = TextEditingController();
+    final readmeController = TextEditingController();
+    final techController = TextEditingController(text: 'Flutter');
     String? selectedFileName;
     String? selectedFilePath;
     dynamic selectedFileBytes;
     bool isUploading = false;
+    bool isPrivate = false;
 
     showModalBottomSheet(
       context: context,
@@ -353,7 +401,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         _buildBottomSheetTextField('Project Name', Icons.drive_file_rename_outline, nameController),
                         const SizedBox(height: 20),
                         _buildBottomSheetTextField('Description', Icons.description_outlined, descController, maxLines: 3),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 20),
+                        _buildBottomSheetTextField('README Content (Markdown supported)', Icons.article_outlined, readmeController, maxLines: 5),
+                        const SizedBox(height: 20),
+                        _buildBottomSheetTextField('Language / Technology', Icons.code_outlined, techController),
+                        const SizedBox(height: 20),
+                        SwitchListTile(
+                          title: const Text('Private Project', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: const Text('Only you can see this project'),
+                          value: isPrivate,
+                          activeColor: Colors.blue,
+                          onChanged: (value) {
+                            setModalState(() => isPrivate = value);
+                          },
+                          contentPadding: EdgeInsets.zero,
+                          secondary: Icon(isPrivate ? Icons.lock_outline : Icons.public_outlined, color: Colors.blue),
+                        ),
+                        const SizedBox(height: 24),
                         const Text('Source Code (ZIP)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                         const SizedBox(height: 12),
                         InkWell(
@@ -427,8 +491,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                       .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
                                       .replaceAll(RegExp(r'\s+'), '-'),
                                   'description': descController.text,
-                                  'technology': 'Flutter',
-                                  'is_private': 'false',
+                                  'readme': readmeController.text,
+                                  'technology': techController.text,
+                                  'is_private': isPrivate.toString(),
                                   if (ProfileService().myProfile != null) 'owner': ProfileService().myProfile!.id.toString(),
                                 }, file: multipartFile);
 
