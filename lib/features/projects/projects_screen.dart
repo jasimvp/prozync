@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
-import 'package:prozync/models/project_model.dart';
+import 'package:prozync/models/project_model.dart'; 
 import 'package:prozync/core/services/project_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
