@@ -10,7 +10,7 @@ import 'package:prozync/core/services/project_service.dart';
 class OtherUserProfileScreen extends StatefulWidget {
   final Profile profile;
 
-  const OtherUserProfileScreen({
+  OtherUserProfileScreen({
     super.key,
     required this.profile,
   });

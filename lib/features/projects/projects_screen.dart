@@ -447,7 +447,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           onTap: () async {
                             final image = await _imagePicker.pickImage(source: ImageSource.gallery);
                             if (image != null) {
-                              setModalState(() => selectedCoverImage = image);
+                              final bytes = await image.readAsBytes();
+                              setModalState(() {
+                                selectedCoverImage = image;
+                                selectedCoverImageBytes = bytes;
+                              });
                             }
                           },
                           child: Container(
@@ -457,11 +461,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               color: Colors.grey.withOpacity(0.05),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: Colors.grey.withOpacity(0.1)),
-                              image: selectedCoverImage != null
+                              image: selectedCoverImageBytes != null
                                   ? DecorationImage(
-                                      image: kIsWeb 
-                                          ? NetworkImage(selectedCoverImage!.path) 
-                                          : FileImage(File(selectedCoverImage!.path)) as ImageProvider,
+                                      image: MemoryImage(selectedCoverImageBytes!),
                                       fit: BoxFit.cover,
                                     )
                                   : null,
