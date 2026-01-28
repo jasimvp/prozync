@@ -184,6 +184,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
+                        chatId: 0, // Placeholder
                         userName: widget.userName,
                         userImage: widget.userImage,
                       ),

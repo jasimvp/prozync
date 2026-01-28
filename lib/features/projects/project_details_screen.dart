@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:prozync/core/theme/app_theme.dart';
 import '../../models/project_model.dart';
 
 class ProjectDetailsScreen extends StatelessWidget {
   final Project project;
 
-  ProjectDetailsScreen({
+  const ProjectDetailsScreen({
     super.key,
     required this.project,
   });
@@ -12,136 +13,263 @@ class ProjectDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isPublic = !project.isPrivate;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Project Details'),
-        actions: [
-          if (isPublic)
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () {},
-            ),
-        ],
-      ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      isPublic ? Icons.public : Icons.lock_outline,
-                      color: isPublic ? Colors.green : Colors.orange,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isPublic ? 'Public Project' : 'Private Project',
-                      style: TextStyle(
-                        color: isPublic ? Colors.green : Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+      body: CustomScrollView(
+        slivers: [
+          // Premium Sliver App Bar with Image/Gradient
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned: true,
+            stretch: true,
+            backgroundColor: AppTheme.primaryColor,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                project.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  shadows: [Shadow(color: Colors.black45, blurRadius: 10)],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  project.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[900],
-                      ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  project.description,
-                  style: const TextStyle(fontSize: 16, color: Colors.black87),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Technology: ${project.language}',
-                  style: TextStyle(color: Colors.blue[800], fontWeight: FontWeight.w500),
-                ),
-                const Divider(height: 40),
-                const Text(
-                  'README.md',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    'https://picsum.photos/seed/${project.id + 100}/1200/800',
+                    fit: BoxFit.cover,
                   ),
-                  child: Text(
-                    isPublic
-                        ? '# ${project.name}\n\n'
-                            'Slug: ${project.slug}\n\n'
-                            'This is a professional project README sync\'d from ProSync.\n\n'
-                            '## Getting Started\n'
-                            '1. Clone the repo\n'
-                            '2. Run `flutter pub get`\n'
-                            '3. Run the app\n\n'
-                            '## Stats\n'
-                            '- Collaborators: ${project.collaboratorCount}'
-                        : 'This project is private. README content is restricted to authorized collaborators only.',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      color: isPublic ? Colors.black87 : Colors.grey[600],
-                      fontStyle: isPublic ? FontStyle.normal : FontStyle.italic,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                if (project.projectZip != null)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Downloading: ${project.projectZip}')),
-                      );
-                      // In a real app, use url_launcher or similar
-                    },
-                    icon: const Icon(Icons.download),
-                    label: const Text('Download Project Source (ZIP)'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Colors.blue[900],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  )
-                else
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.info_outline, color: Colors.orange),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'No ZIP file available for this project or access is restricted.',
-                            style: TextStyle(color: Colors.orange, fontSize: 13),
-                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.share_outlined, color: Colors.white),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onPressed: () {},
+              ),
+            ],
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Center(
+              child: Container(
+                constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Project Tags & Date
+                    Row(
+                      children: [
+                        _buildBadge(
+                          isPublic ? 'Public' : 'Private',
+                          isPublic ? Colors.green : Colors.orange,
+                        ),
+                        const SizedBox(width: 12),
+                        _buildBadge(project.language, Colors.blue),
+                        const Spacer(),
+                        Text(
+                          'Added ${project.createdAt.day}/${project.createdAt.month}/${project.createdAt.year}',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
                         ),
                       ],
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 24),
+
+                    // Owner Info
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${project.ownerName}&background=random'),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              project.ownerName,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            Text(
+                              'Project Owner',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        OutlinedButton(
+                          onPressed: () {},
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('View Profile'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Description
+                    const Text(
+                      'About this project',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      project.description,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[800],
+                        height: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // README Section
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.description_outlined, color: Colors.blue),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'README.md',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Text(
+                              isPublic
+                                  ? '# ${project.name}\n\n'
+                                      'Slug: ${project.slug}\n\n'
+                                      'This is a professional project README sync\'d from ProSync.\n\n'
+                                      '## Getting Started\n'
+                                      '1. Clone the repo\n'
+                                      '2. Run `flutter pub get`\n'
+                                      '3. Run the app\n\n'
+                                      '## Status\n'
+                                      '- Active Contributors: ${project.collaboratorCount}'
+                                  : 'This project is private. README content is restricted to authorized collaborators only.',
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                color: isPublic ? Colors.black87 : Colors.grey[600],
+                                fontStyle: isPublic ? FontStyle.normal : FontStyle.italic,
+                                fontSize: 14,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+
+                    // Action Button
+                    if (project.projectZip != null)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Starting download: ${project.projectZip}')),
+                            );
+                          },
+                          icon: const Icon(Icons.file_download_outlined),
+                          label: const Text('Download Source Code (ZIP)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.orange),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Source code is restricted for this ${project.isPrivate ? "private" : "protected"} project.',
+                                style: const TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
       ),
     );
   }
