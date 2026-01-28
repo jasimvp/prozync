@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/chat_model.dart';
+import 'package:prozync/models/chat_model.dart';
 import 'api_service.dart';
 
 class ChatService extends ChangeNotifier {

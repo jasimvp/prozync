@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:prozync/features/home/home_screen.dart';
 import 'package:prozync/features/explore/explore_screen.dart';
 import 'package:prozync/features/projects/projects_screen.dart';
-import 'package:prozync/features/activity/activity_screen.dart';
 import 'package:prozync/features/profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
