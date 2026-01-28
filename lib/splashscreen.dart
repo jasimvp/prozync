@@ -4,6 +4,7 @@ import 'package:prozync/login.dart';
 import 'package:prozync/signup.dart';
 import 'package:prozync/core/services/auth_service.dart';
 import 'package:prozync/features/main_navigation/main_navigation_screen.dart';
+import 'package:prozync/core/services/profile_service.dart';
 
 class Splashscreen extends StatefulWidget {
   const Splashscreen({super.key});
@@ -24,6 +25,9 @@ class _SplashscreenState extends State<Splashscreen> {
   void _checkAuth() async {
     final isLoggedIn = await _authService.isLoggedIn();
     if (isLoggedIn && mounted) {
+      // Prefetch profile to ensure user IDs are available
+      ProfileService().fetchMyProfile();
+      
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainNavigationScreen()),

@@ -7,6 +7,7 @@ import 'package:prozync/core/services/project_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:prozync/core/theme/app_theme.dart';
+import 'package:prozync/core/services/profile_service.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -23,6 +24,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     super.initState();
     _projectService.fetchProjects();
     _projectService.fetchMyRepos();
+    ProfileService().fetchMyProfile();
   }
 
   @override
@@ -417,13 +419,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 multipartFile = await http.MultipartFile.fromPath('project_zip', selectedFilePath!);
                               }
 
-                              final success = await _projectService.createProject({
-                                'project_name': nameController.text,
-                                'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
-                                'description': descController.text,
-                                'technology': 'Flutter',
-                                'is_private': 'false',
-                              }, file: multipartFile);
+                                final success = await _projectService.createProject({
+                                  'project_name': nameController.text,
+                                  'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                                  'description': descController.text,
+                                  'technology': 'Flutter',
+                                  'is_private': 'false',
+                                  if (ProfileService().myProfile != null) 'owner': ProfileService().myProfile!.id.toString(),
+                                }, file: multipartFile);
 
                               if (context.mounted) {
                                 Navigator.pop(context);

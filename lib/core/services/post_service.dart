@@ -34,11 +34,12 @@ class PostService extends ChangeNotifier {
     }
   }
 
-  Future<Post?> createPost(String content, {int? projectId, http.MultipartFile? imageFile}) async {
+  Future<Post?> createPost(String content, {int? projectId, http.MultipartFile? imageFile, int? userId}) async {
     try {
       final fields = {
         'content': content,
         if (projectId != null) 'project': projectId.toString(),
+        if (userId != null) 'user': userId.toString(),
       };
       
       final response = await _apiService.postMultipart('/posts/', fields, file: imageFile);

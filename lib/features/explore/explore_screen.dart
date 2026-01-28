@@ -287,6 +287,7 @@ class _DevelopersListViewState extends State<DevelopersListView> {
   void initState() {
     super.initState();
     _profileService.fetchProfiles(search: widget.searchQuery);
+    _profileService.fetchMyProfile();
   }
 
   @override
@@ -306,9 +307,11 @@ class _DevelopersListViewState extends State<DevelopersListView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final profiles = _profileService.profiles;
+        final currentUserId = _profileService.myProfile?.id;
+        final profiles = _profileService.profiles.where((p) => p.id != currentUserId).toList();
+
         if (profiles.isEmpty) {
-          return const Center(child: Text('No developers found'));
+          return const Center(child: Text('No other developers found'));
         }
 
         return ListView.builder(

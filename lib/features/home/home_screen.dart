@@ -8,6 +8,7 @@ import 'package:prozync/features/activity/chat_list_screen.dart';
 import 'package:prozync/core/services/post_service.dart';
 import 'package:prozync/models/post_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
+import 'package:prozync/core/services/profile_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _postService.fetchPosts();
+    ProfileService().fetchMyProfile();
   }
 
   @override
@@ -258,7 +260,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     );
                                   }
 
-                                  final result = await _postService.createPost(controller.text, imageFile: imageFile);
+                                  final result = await _postService.createPost(
+                                    controller.text, 
+                                    imageFile: imageFile,
+                                    userId: ProfileService().myProfile?.id,
+                                  );
                                   
                                   if (mounted) {
                                     Navigator.pop(context);
