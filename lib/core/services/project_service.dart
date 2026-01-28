@@ -1,77 +1,97 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../models/project_model.dart';
+import 'api_service.dart';
 
 class ProjectService extends ChangeNotifier {
-  // Singleton pattern
   static final ProjectService _instance = ProjectService._internal();
+  factory ProjectService() => _instance;
+  ProjectService._internal();
 
-  factory ProjectService() {
-    return _instance;
-  }
-
-  ProjectService._internal() {
-    _initializeMockData();
-  }
-
-  final List<Project> _projects = [];
+  final ApiService _apiService = ApiService();
+  List<Project> _projects = [];
+  List<Project> _myRepos = [];
+  bool _isLoading = false;
 
   List<Project> get projects => _projects;
-  List<Project> get myWorks => _projects.where((p) => p.isPinned && p.isMyRepo).toList();
-  // Mock saved projects (others' projects that I saved)
-  List<Project> get savedProjects => _projects.where((p) => !p.isMyRepo).take(3).toList(); // Just grouping some as saved for demo
+  List<Project> get myRepos => _myRepos;
+  List<Project> get savedProjects => _projects.where((p) => p.isPinned).toList();
+  bool get isLoading => _isLoading;
 
-  void _initializeMockData() {
-    _projects.addAll([
-      Project(
-        id: '1',
-        name: 'prozync-mobile',
-        description: 'A professional cross-platform mobile application built with Flutter.',
-        language: 'Flutter',
-        projectType: 'App',
-        lastUpdated: DateTime.now().subtract(const Duration(hours: 2)),
-        isMyRepo: true,
-      ),
-       Project(
-        id: '2',
-        name: 'backend-api-v2',
-        description: 'Scalable REST API built with Node.js and Express.',
-        language: 'JavaScript',
-        projectType: 'Backend',
-        lastUpdated: DateTime.now().subtract(const Duration(days: 1)),
-        isMyRepo: true,
-      ),
-      Project(
-        id: '3',
-        name: 'data-analytics-dashboard',
-        description: 'Real-time analytics dashboard using React and D3.js.',
-        language: 'React',
-        projectType: 'Web',
-        lastUpdated: DateTime.now().subtract(const Duration(days: 3)),
-        isMyRepo: false, // Collaboration
-      ),
-       Project(
-        id: '4',
-        name: 'ai-recommendation-engine',
-        description: 'Python-based recommendation system using TensorFlow.',
-        language: 'Python',
-        projectType: 'AI/ML',
-        lastUpdated: DateTime.now().subtract(const Duration(days: 5)),
-        isMyRepo: true,
-        isPinned: true, // Initially pinned example
-      ),
-      Project(
-        id: '5',
-        name: 'legacy-systems-migration',
-        description: 'Documentation and scripts for migrating legacy databases.',
-        language: 'Shell',
-        projectType: 'Scripting',
-        lastUpdated: DateTime.now().subtract(const Duration(days: 10)),
-        isMyRepo: false,
-      ),
-    ]);
+  Future<void> fetchProjects({String? search}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final endpoint = search != null ? '/projects/?search=$search' : '/projects/';
+      final response = await _apiService.get(endpoint);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _projects = data.map((json) => Project.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching projects: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  void togglePin(String projectId) {
+  Future<void> fetchMyRepos() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.get('/projects/my_repos/');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _myRepos = data.map((json) => Project.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching my repos: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Project?> createProject(Map<String, String> data, {http.MultipartFile? file}) async {
+    try {
+      final response = await _apiService.postMultipart('/projects/', data, file: file);
+      if (response.statusCode == 201) {
+        final project = Project.fromJson(jsonDecode(response.body));
+        _projects.insert(0, project);
+        _myRepos.insert(0, project);
+        notifyListeners();
+        return project;
+      } else {
+        debugPrint('Failed to create project: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error creating project: $e');
+    }
+    return null;
+  }
+
+  Future<bool> deleteProject(int id) async {
+    try {
+      final response = await _apiService.delete('/projects/$id/');
+      if (response.statusCode == 204) {
+        _projects.removeWhere((p) => p.id == id);
+        _myRepos.removeWhere((p) => p.id == id);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error deleting project: $e');
+    }
+    return false;
+  }
+
+  void togglePin(int projectId) {
     final index = _projects.indexWhere((p) => p.id == projectId);
     if (index != -1) {
       _projects[index].isPinned = !_projects[index].isPinned;

@@ -1,21 +1,64 @@
 class Project {
-  final String id;
-  final String name;
+  final int id;
+  final int owner;
+  final String ownerName;
+  final String projectName;
+  final String slug;
   final String description;
-  final String language;
-  final String projectType; // Added field: 'Web', 'App', etc.
-  final DateTime lastUpdated;
-  bool isPinned;
-  final bool isMyRepo; // To distinguish between my repos and collaborations
+  final String technology;
+  final String? projectZip;
+  final bool isPrivate;
+  final String collaboratorCount;
+  final DateTime createdAt;
+  bool isPinned; // Local state or UI check
 
   Project({
     required this.id,
-    required this.name,
+    required this.owner,
+    required this.ownerName,
+    required this.projectName,
+    required this.slug,
     required this.description,
-    required this.language,
-    required this.projectType,
-    required this.lastUpdated,
+    required this.technology,
+    this.projectZip,
+    required this.isPrivate,
+    required this.collaboratorCount,
+    required this.createdAt,
     this.isPinned = false,
-    this.isMyRepo = true,
   });
+
+  // UI Compatibility Getters
+  String get name => projectName;
+  String get language => technology;
+  String get projectType => "Repo"; // Default
+  DateTime get lastUpdated => createdAt;
+  bool get isMyRepo => true; // This will depend on the current user matching owner ID
+
+  factory Project.fromJson(Map<String, dynamic> json) {
+    return Project(
+      id: json['id'],
+      owner: json['owner'],
+      ownerName: json['owner_name'],
+      projectName: json['project_name'],
+      slug: json['slug'],
+      description: json['description'] ?? '',
+      technology: json['technology'] ?? '',
+      projectZip: json['project_zip'],
+      isPrivate: json['is_private'] ?? false,
+      collaboratorCount: json['collaborator_count'].toString(),
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'owner': owner,
+      'project_name': projectName,
+      'slug': slug,
+      'description': description,
+      'technology': technology,
+      'project_zip': projectZip,
+      'is_private': isPrivate,
+    };
+  }
 }

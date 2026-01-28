@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../models/project_model.dart';
 
 class ProjectDetailsScreen extends StatelessWidget {
-  final String projectName;
-  final bool isPublic;
-  final String description;
+  final Project project;
 
-  const ProjectDetailsScreen({
+  ProjectDetailsScreen({
     super.key,
-    required this.projectName,
-    required this.isPublic,
-    required this.description,
+    required this.project,
   });
 
   @override
   Widget build(BuildContext context) {
+    bool isPublic = !project.isPrivate;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Project Details'),
@@ -51,7 +50,7 @@ class ProjectDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  projectName,
+                  project.name,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[900],
@@ -59,8 +58,13 @@ class ProjectDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  description,
+                  project.description,
                   style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Technology: ${project.language}',
+                  style: TextStyle(color: Colors.blue[800], fontWeight: FontWeight.w500),
                 ),
                 const Divider(height: 40),
                 const Text(
@@ -78,16 +82,15 @@ class ProjectDetailsScreen extends StatelessWidget {
                   ),
                   child: Text(
                     isPublic
-                        ? '# $projectName\n\n'
-                            'This is a professional project README.\n\n'
+                        ? '# ${project.name}\n\n'
+                            'Slug: ${project.slug}\n\n'
+                            'This is a professional project README sync\'d from ProSync.\n\n'
                             '## Getting Started\n'
                             '1. Clone the repo\n'
                             '2. Run `flutter pub get`\n'
                             '3. Run the app\n\n'
-                            '## Features\n'
-                            '- Responsive Design\n'
-                            '- Firebase Integration\n'
-                            '- Clean Architecture'
+                            '## Stats\n'
+                            '- Collaborators: ${project.collaboratorCount}'
                         : 'This project is private. README content is restricted to authorized collaborators only.',
                     style: TextStyle(
                       fontFamily: 'monospace',
@@ -96,16 +99,17 @@ class ProjectDetailsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                if (isPublic)
+                const SizedBox(height: 40),
+                if (project.projectZip != null)
                   ElevatedButton.icon(
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Downloading ZIP...')),
+                        SnackBar(content: Text('Downloading: ${project.projectZip}')),
                       );
+                      // In a real app, use url_launcher or similar
                     },
                     icon: const Icon(Icons.download),
-                    label: const Text('Download ZIP'),
+                    label: const Text('Download Project Source (ZIP)'),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                       backgroundColor: Colors.blue[900],
@@ -127,7 +131,7 @@ class ProjectDetailsScreen extends StatelessWidget {
                         SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Downloads are disabled for private projects. Request collaboration access to download.',
+                            'No ZIP file available for this project or access is restricted.',
                             style: TextStyle(color: Colors.orange, fontSize: 13),
                           ),
                         ),

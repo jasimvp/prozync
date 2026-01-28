@@ -1,87 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:prozync/core/services/notification_service.dart';
+import 'package:prozync/models/notification_model.dart';
 
-class ActivityScreen extends StatelessWidget {
+class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
 
   @override
+  State<ActivityScreen> createState() => _ActivityScreenState();
+}
+
+class _ActivityScreenState extends State<ActivityScreen> {
+  final _notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationService.fetchNotifications();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Activity'),
-      ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView.separated(
-            itemCount: 15,
-            separatorBuilder: (context, index) => const Divider(indent: 72),
-            itemBuilder: (context, index) {
-              return _buildActivityTile(index);
-            },
+    return ListenableBuilder(
+      listenable: _notificationService,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Activity'),
+            actions: [
+              IconButton(
+                onPressed: () => _notificationService.fetchNotifications(),
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
           ),
-        ),
-      ),
+          body: _notificationService.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: _notificationService.notifications.isEmpty
+                        ? const Center(child: Text('No recent activity'))
+                        : ListView.separated(
+                            itemCount: _notificationService.notifications.length,
+                            separatorBuilder: (context, index) => const Divider(indent: 72),
+                            itemBuilder: (context, index) {
+                              return _buildActivityTile(_notificationService.notifications[index]);
+                            },
+                          ),
+                  ),
+                ),
+        );
+      },
     );
   }
 
-  Widget _buildActivityTile(int index) {
-    final types = ['like', 'follow', 'collab', 'comment'];
-    final type = types[index % 4];
+  String _timeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
+    return 'just now';
+  }
 
+  Widget _buildActivityTile(NotificationModel notification) {
     IconData icon;
     Color color;
-    String message;
 
-    switch (type) {
-      case 'like':
-        icon = Icons.favorite;
+    switch (notification.status) {
+      case 'ACCEPTED':
+        icon = Icons.check_circle;
+        color = Colors.green;
+        break;
+      case 'REJECTED':
+        icon = Icons.cancel;
         color = Colors.red;
-        message = 'liked your post "New UI Design"';
-        break;
-      case 'follow':
-        icon = Icons.person_add;
-        color = Colors.blue;
-        message = 'started following you';
-        break;
-      case 'collab':
-        icon = Icons.handshake;
-        color = Colors.orange;
-        message = 'invited you to collaborate on "ProSync App"';
         break;
       default:
-        icon = Icons.chat_bubble;
-        color = Colors.green;
-        message = 'commented: "Great work on the backend!"';
+        icon = Icons.notifications;
+        color = Colors.blue;
     }
 
     return ListTile(
+      onTap: () => _notificationService.markAsRead(notification.id),
       leading: Stack(
         children: [
           CircleAvatar(
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=$index'),
+            backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${notification.senderName}&background=random'),
           ),
           Positioned(
             right: 0,
             bottom: 0,
             child: Container(
               padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              child: Icon(icon, size: 10, color: color),
+              decoration: BoxDecoration(
+                color: notification.isRead ? Colors.grey : Colors.blue,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(icon, size: 10, color: Colors.white),
             ),
           ),
         ],
       ),
       title: RichText(
         text: TextSpan(
-          style: const TextStyle(color: Colors.black, fontSize: 14),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+            fontSize: 14,
+          ),
           children: [
-            const TextSpan(text: 'John Doe ', style: TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: message, style: const TextStyle(color: Colors.grey)),
+            TextSpan(text: '${notification.senderName} ', style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: notification.message, style: const TextStyle(color: Colors.grey)),
           ],
         ),
       ),
-      subtitle: const Text('2h ago', style: TextStyle(fontSize: 12)),
-      trailing: type == 'collab'
+      subtitle: Text(_timeAgo(notification.createdAt), style: const TextStyle(fontSize: 12)),
+      trailing: notification.status == 'PENDING'
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -93,7 +127,7 @@ class ActivityScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     minimumSize: const Size(0, 30),
                   ),
-                  child: const Text('Accept', style: TextStyle(fontSize: 12)),
+                  child: const Text('View', style: TextStyle(fontSize: 12)),
                 ),
               ],
             )

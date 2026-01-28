@@ -1,0 +1,28 @@
+﻿Analyzing prozync...                                            
+
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:59:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:60:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:68:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:69:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:108:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:109:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:110:23 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:115:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\api_service.dart:116:5 - avoid_print
+warning - The value of the local variable 'color' isn't used - lib\features\activity\activity_screen.dart:67:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\activity\chat_screen.dart:106:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\explore\explore_screen.dart:197:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\explore\explore_screen.dart:199:75 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\explore\explore_screen.dart:256:52 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\home\home_screen.dart:183:48 - use_build_context_synchronously
+warning - Unused import: 'package:prozync/features/activity/activity_screen.dart' - lib\features\main_navigation\main_navigation_screen.dart:5:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\other_user_profile_screen.dart:246:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\profile_screen.dart:284:28 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\profile\profile_screen.dart:330:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\profile\profile_screen.dart:331:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\saved_projects_screen.dart:40:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\projects\project_details_screen.dart:125:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\projects\projects_screen.dart:224:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\projects\projects_screen.dart:226:47 - deprecated_member_use
+   info - Invalid use of a private type in a public API - lib\main.dart:15:10 - library_private_types_in_public_api
+

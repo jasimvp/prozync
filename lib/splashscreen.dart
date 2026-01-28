@@ -2,9 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:prozync/login.dart';
 import 'package:prozync/signup.dart';
+import 'package:prozync/core/services/auth_service.dart';
+import 'package:prozync/features/main_navigation/main_navigation_screen.dart';
 
-class Splashscreen extends StatelessWidget {
+class Splashscreen extends StatefulWidget {
   const Splashscreen({super.key});
+
+  @override
+  State<Splashscreen> createState() => _SplashscreenState();
+}
+
+class _SplashscreenState extends State<Splashscreen> {
+  final _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  void _checkAuth() async {
+    final isLoggedIn = await _authService.isLoggedIn();
+    if (isLoggedIn && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +69,7 @@ class Splashscreen extends StatelessWidget {
 
                       // Login Button
                       ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 400), // Max width for wider screens
+                        constraints: const BoxConstraints(maxWidth: 400), // Max width for wider screens
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pushReplacement(
@@ -62,7 +87,7 @@ class Splashscreen extends StatelessWidget {
                             elevation: 5,
                             minimumSize: const Size(double.infinity, 50),
                           ),
-                          child: Text(
+                          child: const Text(
                             'LOGIN',
                             style: TextStyle(
                               fontSize: 18, 
@@ -76,7 +101,7 @@ class Splashscreen extends StatelessWidget {
 
                       // Sign Up Button
                       ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 400),
+                        constraints: const BoxConstraints(maxWidth: 400),
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pushReplacement(
@@ -95,7 +120,7 @@ class Splashscreen extends StatelessWidget {
                             elevation: 0,
                             minimumSize: const Size(double.infinity, 50),
                           ),
-                          child: Text(
+                          child: const Text(
                             'SIGN UP',
                             style: TextStyle(
                               fontSize: 18,
