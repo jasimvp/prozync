@@ -253,8 +253,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           Expanded(child: _buildStatItem(context, widget.profile.repoCount, 'Projects')),
           _buildVerticalDivider(),
           Expanded(child: _buildStatItem(context, widget.profile.followerCount, 'Followers')),
-          _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, widget.profile.followingCount, 'Following')),
         ],
       ),
     );

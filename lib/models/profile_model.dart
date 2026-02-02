@@ -1,3 +1,4 @@
+class Profile {
   final int id;
   final int user;
   final String username;
