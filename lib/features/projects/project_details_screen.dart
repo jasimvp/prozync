@@ -474,7 +474,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           subtitle: Text(profile.profession),
                           trailing: ElevatedButton(
                             onPressed: () async {
-                              final success = await ProjectService().sendCollabInvitation(widget.project.id, profile.id);
+                              final success = await ProjectService().sendInvitation(widget.project.id, profile.id);
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(

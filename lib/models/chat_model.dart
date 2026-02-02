@@ -2,7 +2,10 @@ class Message {
   final int id;
   final int senderId;
   final String senderName;
+  final int? receiverId;
+  final String? receiverName;
   final String text;
+  final bool isRead;
   final DateTime createdAt;
   final bool isMe;
 
@@ -10,7 +13,10 @@ class Message {
     required this.id,
     required this.senderId,
     required this.senderName,
+    this.receiverId,
+    this.receiverName,
     required this.text,
+    required this.isRead,
     required this.createdAt,
     this.isMe = false,
   });
@@ -20,8 +26,11 @@ class Message {
       id: json['id'],
       senderId: json['sender'],
       senderName: json['sender_name'] ?? '',
-      text: json['message_text'] ?? json['text'] ?? '',
-      createdAt: DateTime.parse(json['created_at']),
+      receiverId: json['receiver'],
+      receiverName: json['receiver_name'],
+      text: json['message'] ?? '',
+      isRead: json['is_read'] ?? false,
+      createdAt: DateTime.parse(json['timestamp']),
       isMe: json['sender'] == currentUserId,
     );
   }

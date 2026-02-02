@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:prozync/models/chat_model.dart';
+import 'package:prozync/core/services/profile_service.dart';
 import 'api_service.dart';
 
 class ChatService extends ChangeNotifier {
@@ -22,94 +23,99 @@ class ChatService extends ChangeNotifier {
     Future.microtask(() => notifyListeners());
 
     try {
-      final response = await _apiService.get('/chats/');
+      // Assuming GET /api/messages/ returns all messages or recent ones
+      // We will group them to form the chat list
+      final response = await _apiService.get('/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _chats = data.map((json) => ChatPreview.fromJson(json)).toList();
-      } else {
-        // Fallback to mock data if backend isn't ready
-        _generateMockChats();
+        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final allMessages = data.map((json) => Message.fromJson(json, currentUserId)).toList();
+        
+        // Group by other user
+        final Map<int, List<Message>> grouped = {};
+        for (var msg in allMessages) {
+          final otherId = msg.isMe ? (msg.receiverId ?? 0) : msg.senderId;
+          if (otherId == 0) continue; // Skip invalid
+          if (!grouped.containsKey(otherId)) grouped[otherId] = [];
+          grouped[otherId]!.add(msg);
+        }
+
+        _chats = grouped.entries.map((entry) {
+          final msgs = entry.value;
+          msgs.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // Newest first
+          final lastMsg = msgs.first;
+          final otherUser = lastMsg.isMe ? lastMsg.receiverName : lastMsg.senderName;
+          
+          return ChatPreview(
+            id: entry.key, // otherUserId as ID
+            otherUserName: otherUser ?? 'User',
+            otherUserImage: 'https://ui-avatars.com/api/?name=${otherUser ?? 'User'}', // Placeholder
+            lastMessage: lastMsg.text,
+            lastMessageTime: lastMsg.createdAt,
+            unreadCount: msgs.where((m) => !m.isMe && !m.isRead).length,
+          );
+        }).toList();
+        
+        _chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
       }
     } catch (e) {
       debugPrint('Error fetching chats: $e');
-      _generateMockChats();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchMessages(int chatId) async {
-    if (chatId <= 0) {
-      _generateMockMessages();
-      notifyListeners();
-      return;
-    }
-
+  Future<void> fetchMessages(int otherUserId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final response = await _apiService.get('/chats/$chatId/messages/');
+      // If API supports filtering: /messages/?user=ID or similar. 
+      // For now, we fetch all (cached/lightweight ideally) and filter.
+      // Optimally: GET /messages/conversation/?user_id=X
+      final response = await _apiService.get('/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _currentMessages = data.map((json) => Message.fromJson(json, 0)).toList();
-      } else {
-        _generateMockMessages();
+        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final allMessages = data.map((json) => Message.fromJson(json, currentUserId)).toList();
+        
+        _currentMessages = allMessages.where((m) {
+          return (m.senderId == otherUserId && m.isMe == false) ||
+                 (m.isMe == true && m.receiverId == otherUserId);
+        }).toList();
+
+        _currentMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt)); // Oldest first for chat view
       }
     } catch (e) {
       debugPrint('Error fetching messages: $e');
-      _generateMockMessages();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<bool> sendMessage(int chatId, String text) async {
-    if (chatId > 0) {
-      try {
-        final response = await _apiService.post('/chats/$chatId/messages/', {'text': text});
-        if (response.statusCode == 201) {
-          final newMessage = Message.fromJson(jsonDecode(response.body), 0);
-          _currentMessages.add(newMessage);
-          notifyListeners();
-          return true;
-        }
-      } catch (e) {
-        debugPrint('Error sending message: $e');
+  Future<bool> sendMessage(int receiverId, String text) async {
+    try {
+      final response = await _apiService.post('/messages/', {
+        'receiver': receiverId,
+        'message': text,
+        'is_read': false // Default
+      });
+      
+      if (response.statusCode == 201) {
+        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final newMessage = Message.fromJson(jsonDecode(response.body), currentUserId);
+        _currentMessages.add(newMessage); // Add locally
+        notifyListeners();
+        
+        // Refresh chat list to update last message
+        fetchChats(); 
+        return true;
       }
+    } catch (e) {
+      debugPrint('Error sending message: $e');
     }
-    
-    // Mock success for UI demo
-    _currentMessages.add(Message(
-      id: DateTime.now().millisecondsSinceEpoch,
-      senderId: 0,
-      senderName: 'Me',
-      text: text,
-      createdAt: DateTime.now(),
-      isMe: true,
-    ));
-    notifyListeners();
-    return true;
-  }
-
-  void _generateMockChats() {
-    _chats = List.generate(5, (index) => ChatPreview(
-      id: index,
-      otherUserName: 'Developer ${index + 1}',
-      otherUserImage: 'https://i.pravatar.cc/150?u=dev$index',
-      lastMessage: 'Hey, checked out your repo!',
-      lastMessageTime: DateTime.now().subtract(Duration(hours: index)),
-      unreadCount: index < 2 ? 1 : 0,
-    ));
-  }
-
-  void _generateMockMessages() {
-    _currentMessages = [
-      Message(id: 1, senderId: 1, senderName: 'Other', text: 'Hey there!', createdAt: DateTime.now().subtract(const Duration(hours: 1)), isMe: false),
-      Message(id: 2, senderId: 0, senderName: 'Me', text: 'Hello! How are you?', createdAt: DateTime.now().subtract(const Duration(minutes: 45)), isMe: true),
-      Message(id: 3, senderId: 1, senderName: 'Other', text: 'I saw your latest Flutter project. Looks great!', createdAt: DateTime.now().subtract(const Duration(minutes: 30)), isMe: false),
-    ];
+    return false;
   }
 }

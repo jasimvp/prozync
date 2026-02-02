@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/profile_model.dart';
+import '../../models/social_model.dart';
 import 'api_service.dart';
 
 class ProfileService extends ChangeNotifier {
@@ -12,10 +13,12 @@ class ProfileService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   Profile? _myProfile;
   List<Profile> _profiles = [];
+  List<ConnectionRequest> _connections = [];
   bool _isLoading = false;
 
   Profile? get myProfile => _myProfile;
   List<Profile> get profiles => _profiles;
+  List<ConnectionRequest> get connections => _connections;
   bool get isLoading => _isLoading;
 
   Future<void> fetchProfiles({String? search}) async {
@@ -102,11 +105,54 @@ class ProfileService extends ChangeNotifier {
     try {
       final response = await _apiService.post('/profiles/$id/follow/', {});
       if (response.statusCode == 200) {
-        // Optionially refresh my profile or the follow list
         return true;
       }
     } catch (e) {
       debugPrint('Error following profile: $e');
+    }
+    return false;
+  }
+
+  Future<void> fetchConnections() async {
+    _isLoading = true;
+    Future.microtask(() => notifyListeners());
+
+    try {
+      final response = await _apiService.get('/connections/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _connections = data.map((json) => ConnectionRequest.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching connections: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> sendConnectionRequest(int receiverId) async {
+    try {
+      final response = await _apiService.post('/connections/', {'receiver': receiverId});
+      if (response.statusCode == 201) {
+        fetchConnections();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error sending connection request: $e');
+    }
+    return false;
+  }
+
+  Future<bool> respondToConnection(int id, String status) async {
+    try {
+      final response = await _apiService.post('/connections/$id/respond/', {'status': status});
+      if (response.statusCode == 200) {
+        fetchConnections();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error responding to connection: $e');
     }
     return false;
   }

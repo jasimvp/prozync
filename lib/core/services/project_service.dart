@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../models/project_model.dart';
+import '../../models/social_model.dart';
 import 'api_service.dart';
 
 class ProjectService extends ChangeNotifier {
@@ -12,11 +13,13 @@ class ProjectService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   List<Project> _projects = [];
   List<Project> _myRepos = [];
+  List<Invitation> _invitations = [];
   bool _isLoading = false;
 
   List<Project> get projects => _projects;
   List<Project> get myRepos => _myRepos;
   List<Project> get savedProjects => _projects.where((p) => p.isPinned).toList();
+  List<Invitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
 
   Future<void> fetchProjects({String? search}) async {
@@ -99,13 +102,43 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Future<bool> sendCollabInvitation(int projectId, int userId) async {
+  Future<void> fetchInvitations() async {
     try {
-      final response = await _apiService.post('/projects/$projectId/invite/', {'user_id': userId});
-      return response.statusCode == 200 || response.statusCode == 201;
+      final response = await _apiService.get('/invitations/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _invitations = data.map((json) => Invitation.fromJson(json)).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching invitations: $e');
+    }
+  }
+
+  Future<bool> sendInvitation(int projectId, int receiverId) async {
+    try {
+      final response = await _apiService.post('/invitations/', {
+        'project': projectId,
+        'receiver': receiverId,
+        'status': 'PENDING'
+      });
+      return response.statusCode == 201;
     } catch (e) {
       debugPrint('Error sending invitation: $e');
       return false;
     }
+  }
+
+  Future<bool> respondToInvitation(int id, String status) async {
+    try {
+      final response = await _apiService.post('/invitations/$id/respond/', {'status': status});
+      if (response.statusCode == 200) {
+        fetchInvitations();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error responding to invitation: $e');
+    }
+    return false;
   }
 }
