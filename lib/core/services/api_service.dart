@@ -37,7 +37,7 @@ class ApiService {
   Future<http.Response> get(String endpoint) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.get(url, headers: _getHeaders(token));
+    return await http.get(url, headers: _getHeaders(token)).timeout(const Duration(seconds: 60));
   }
 
   Future<http.Response> post(String endpoint, dynamic body, {bool isUrlEncoded = false}) async {
@@ -53,7 +53,7 @@ class ApiService {
           if (token != null) 'Authorization': 'Token $token',
         },
         body: body,
-      );
+      ).timeout(const Duration(seconds: 60));
     }
 
     print('POST Request: $url');
@@ -63,7 +63,7 @@ class ApiService {
       url,
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 60));
 
     print('POST Response Status: ${response.statusCode}');
     print('POST Response Body: ${response.body}');
@@ -77,7 +77,7 @@ class ApiService {
       url,
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 60));
   }
 
   Future<http.Response> patch(String endpoint, dynamic body) async {
@@ -87,7 +87,7 @@ class ApiService {
       url,
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 60));
   }
 
   Future<http.Response> postMultipart(String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
@@ -121,7 +121,7 @@ class ApiService {
       }
     }
     
-    final streamedResponse = await request.send();
+    final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
     final response = await http.Response.fromStream(streamedResponse);
     
     print('MULTIPART Response Status: ${response.statusCode}');
@@ -132,6 +132,6 @@ class ApiService {
   Future<http.Response> delete(String endpoint) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.delete(url, headers: _getHeaders(token));
+    return await http.delete(url, headers: _getHeaders(token)).timeout(const Duration(seconds: 60));
   }
 }

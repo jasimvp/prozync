@@ -9,6 +9,8 @@ import 'package:prozync/core/services/post_service.dart';
 import 'package:prozync/models/post_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
+import 'package:prozync/models/comment_model.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -424,9 +426,22 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildLikeButton(post),
                 const SizedBox(width: 20),
-                _buildInteractionItem(Icons.chat_bubble_outline_rounded, post.commentCount.toString(), Colors.blue),
+                InkWell(
+                  onTap: () => _showCommentsBottomSheet(context, post),
+                  child: _buildInteractionItem(Icons.chat_bubble_outline_rounded, post.commentCount.toString(), Colors.blue),
+                ),
                 const Spacer(),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.bookmark_border_rounded, color: Colors.grey)),
+                IconButton(
+                  onPressed: () async {
+                    final saved = await _postService.toggleSavePost(post.id);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(saved ? 'Post saved!' : 'Could not save post')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.bookmark_border_rounded, color: Colors.grey),
+                ),
                 IconButton(onPressed: () {}, icon: const Icon(Icons.ios_share_rounded, color: Colors.grey)),
               ],
             ),
@@ -546,4 +561,199 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+
+  void _showCommentsBottomSheet(BuildContext context, Post post) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Allow full height
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CommentsSheet(post: post),
+    );
+  }
 }
+
+class _CommentsSheet extends StatefulWidget {
+  final Post post;
+  const _CommentsSheet({required this.post});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final TextEditingController _commentController = TextEditingController();
+  final PostService _postService = PostService();
+  List<dynamic> _comments = []; // Use dynamic or Comment model
+  bool _isLoading = true;
+  bool _isPosting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchComments();
+  }
+
+  Future<void> _fetchComments() async {
+    final comments = await _postService.fetchComments(widget.post.id);
+    if (mounted) {
+      setState(() {
+        _comments = comments;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+    
+    setState(() => _isPosting = true);
+    final comment = await _postService.addComment(widget.post.id, _commentController.text.trim());
+    
+    if (mounted) {
+      setState(() => _isPosting = false);
+      if (comment != null) {
+        _commentController.clear();
+        _comments.insert(0, comment); // Optimistic update
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                const Text('Comments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+              ],
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _comments.isEmpty
+                ? Center(
+                    child: Text(
+                      'No comments yet.\nBe the first to say something!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _comments.length,
+                    itemBuilder: (context, index) {
+                      final comment = _comments[index];
+                      // Assuming comment follows the structure: {username, content, created_at, ...}
+                      // Adjust based on your Comment model or API response
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${comment.username}&background=random'),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor, // Use card color or grey
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          comment.username,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(comment.content, style: const TextStyle(fontSize: 14)),
+                                      ],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8, top: 4),
+                                    child: Text(
+                                      // Simple time ago
+                                      'Just now', // Replace with actual time logic if needed
+                                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      hintText: 'Write a comment...',
+                      filled: true,
+                      fillColor: Theme.of(context).cardColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton.filled(
+                  onPressed: _isPosting ? null : _postComment,
+                  style: IconButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                  icon: _isPosting 
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.send_rounded, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
