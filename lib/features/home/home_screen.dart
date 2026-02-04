@@ -583,7 +583,7 @@ class _CommentsSheet extends StatefulWidget {
 class _CommentsSheetState extends State<_CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
   final PostService _postService = PostService();
-  List<dynamic> _comments = []; // Use dynamic or Comment model
+  List<Comment> _comments = [];
   bool _isLoading = true;
   bool _isPosting = false;
 
@@ -613,7 +613,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       setState(() => _isPosting = false);
       if (comment != null) {
         _commentController.clear();
-        _comments.insert(0, comment); // Optimistic update
+        _comments.insert(0, comment);
       }
     }
   }
@@ -662,8 +662,6 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
-                      // Assuming comment follows the structure: {username, content, created_at, ...}
-                      // Adjust based on your Comment model or API response
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Row(
@@ -681,7 +679,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).cardColor, // Use card color or grey
+                                      color: Theme.of(context).cardColor,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
@@ -699,8 +697,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                   Padding(
                                     padding: const EdgeInsets.only(left: 8, top: 4),
                                     child: Text(
-                                      // Simple time ago
-                                      'Just now', // Replace with actual time logic if needed
+                                      'Just now',
                                       style: TextStyle(color: Colors.grey[500], fontSize: 11),
                                     ),
                                   ),
@@ -719,7 +716,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black12,
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -757,3 +754,4 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       ),
     );
   }
+}
