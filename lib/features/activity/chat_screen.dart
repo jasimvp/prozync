@@ -33,20 +33,30 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    
-    _messageController.clear();
-    await _chatService.sendMessage(widget.chatId, text);
-    
-    // Auto scroll to bottom
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+
+    final success = await _chatService.sendMessage(widget.chatId, text);
+
+    if (success) {
+      _messageController.clear();
+      // Auto scroll to bottom
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send message. Please try again.'),
+          ),
         );
       }
-    });
+    }
   }
 
   @override
@@ -69,26 +79,41 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       widget.userName,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Text(
                       'Online',
-                      style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
             actions: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.videocam_outlined)),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.call_outlined)),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.videocam_outlined),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.call_outlined),
+              ),
               const SizedBox(width: 8),
             ],
           ),
           body: Column(
             children: [
               Expanded(
-                child: _chatService.isLoading && _chatService.currentMessages.isEmpty
+                child:
+                    _chatService.isLoading &&
+                        _chatService.currentMessages.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : ListView.builder(
                         controller: _scrollController,
@@ -113,7 +138,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -130,11 +157,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: AppTheme.primaryColor.withOpacity(0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
-              )
+              ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message.text,
@@ -160,7 +189,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
@@ -190,7 +224,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 filled: true,
                 fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
@@ -204,7 +241,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: AppTheme.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],

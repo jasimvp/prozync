@@ -36,16 +36,25 @@ class PostService extends ChangeNotifier {
     }
   }
 
-  Future<Post?> createPost(String content, {int? projectId, http.MultipartFile? imageFile, int? userId}) async {
+  Future<Post?> createPost(
+    String content, {
+    int? projectId,
+    http.MultipartFile? imageFile,
+    int? userId,
+  }) async {
     try {
       final fields = {
         'content': content,
         if (projectId != null) 'project': projectId.toString(),
         if (userId != null) 'user': userId.toString(),
       };
-      
-      final response = await _apiService.postMultipart('/posts/', fields, files: imageFile != null ? [imageFile] : null);
-      
+
+      final response = await _apiService.postMultipart(
+        '/posts/',
+        fields,
+        files: imageFile != null ? [imageFile] : null,
+      );
+
       if (response.statusCode == 201) {
         final post = Post.fromJson(jsonDecode(response.body));
         _posts.insert(0, post);
@@ -68,7 +77,7 @@ class PostService extends ChangeNotifier {
           if (body is Map && body.containsKey('id')) {
             _posts[index] = Post.fromJson(body as Map<String, dynamic>);
           } else {
-            fetchPosts(); 
+            fetchPosts();
           }
           notifyListeners();
         }
@@ -82,7 +91,23 @@ class PostService extends ChangeNotifier {
     try {
       final response = await _apiService.post('/posts/$id/save/', {});
       if (response.statusCode == 200 || response.statusCode == 201) {
-        notifyListeners();
+        final index = _posts.indexWhere((p) => p.id == id);
+        if (index != -1) {
+          final post = _posts[index];
+          _posts[index] = Post(
+            id: post.id,
+            user: post.user,
+            username: post.username,
+            project: post.project,
+            image: post.image,
+            content: post.content,
+            likeCount: post.likeCount,
+            commentCount: post.commentCount,
+            isSaved: !post.isSaved,
+            createdAt: post.createdAt,
+          );
+          notifyListeners();
+        }
         return true;
       }
     } catch (e) {
@@ -106,15 +131,17 @@ class PostService extends ChangeNotifier {
 
   Future<Comment?> addComment(int postId, String content) async {
     try {
-      final response = await _apiService.post('/posts/$postId/comments/', {'content': content});
-      if (response.statusCode == 201) {
+      final response = await _apiService.post('/posts/$postId/comments/', {
+        'content': content,
+      });
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final comment = Comment.fromJson(jsonDecode(response.body));
         // Update local post comment count if possible
         final index = _posts.indexWhere((p) => p.id == postId);
         if (index != -1) {
-             // Ideally we'd update the post object here, but it's immutable. 
-             // We can trigger a refresh or handle it in the UI.
-             fetchPosts(); // Refresh to get updated counts
+          // Ideally we'd update the post object here, but it's immutable.
+          // We can trigger a refresh or handle it in the UI.
+          fetchPosts(); // Refresh to get updated counts
         }
         notifyListeners();
         return comment;

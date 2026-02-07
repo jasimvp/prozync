@@ -7,6 +7,7 @@ class Post {
   final String content;
   final int likeCount;
   final int commentCount;
+  final bool isSaved;
   final DateTime createdAt;
 
   Post({
@@ -18,6 +19,7 @@ class Post {
     required this.content,
     required this.likeCount,
     required this.commentCount,
+    this.isSaved = false,
     required this.createdAt,
   });
 
@@ -31,8 +33,9 @@ class Post {
       content: json['content'] ?? '',
       likeCount: json['like_count'] ?? 0,
       commentCount: json['comment_count'] ?? 0,
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      isSaved: json['is_saved'] ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : DateTime.now(),
     );
   }

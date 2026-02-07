@@ -11,7 +11,6 @@ import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/models/comment_model.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -51,7 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   )
                 else if (_postService.posts.isEmpty)
                   const SliverFillRemaining(
-                    child: Center(child: Text('No posts yet. Be the first to post!')),
+                    child: Center(
+                      child: Text('No posts yet. Be the first to post!'),
+                    ),
                   )
                 else
                   SliverPadding(
@@ -61,7 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildPostCard(context, _postService.posts[index]),
+                        (context, index) =>
+                            _buildPostCard(context, _postService.posts[index]),
                         childCount: _postService.posts.length,
                       ),
                     ),
@@ -74,7 +76,13 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: AppTheme.primaryColor,
             elevation: 4,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('New Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'New Post',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         );
       },
@@ -93,7 +101,11 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.code_rounded, color: AppTheme.primaryColor, size: 22),
+            child: const Icon(
+              Icons.code_rounded,
+              color: AppTheme.primaryColor,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           const Column(
@@ -105,7 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Text(
                 'Community Feed',
-                style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -150,10 +166,14 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, setModalState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.6,
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -161,15 +181,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Row(
                     children: [
-                      const Text('Create Post', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Create Post',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const Spacer(),
-                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
                     ],
                   ),
                 ),
@@ -200,12 +232,27 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.image, color: Colors.blue, size: 20),
+                                const Icon(
+                                  Icons.image,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 10),
-                                Expanded(child: Text(selectedFileName!, style: const TextStyle(fontSize: 14))),
+                                Expanded(
+                                  child: Text(
+                                    selectedFileName!,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ),
                                 IconButton(
-                                  icon: const Icon(Icons.cancel, size: 20, color: Colors.grey),
-                                  onPressed: () => setModalState(() => selectedFileName = null),
+                                  icon: const Icon(
+                                    Icons.cancel,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: () => setModalState(
+                                    () => selectedFileName = null,
+                                  ),
                                 ),
                               ],
                             ),
@@ -214,76 +261,119 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             IconButton(
                               onPressed: () async {
-                                final result = await FilePicker.platform.pickFiles(
-                                  type: FileType.image,
-                                  withData: kIsWeb,
-                                );
+                                final result = await FilePicker.platform
+                                    .pickFiles(
+                                      type: FileType.image,
+                                      withData: kIsWeb,
+                                    );
                                 if (result != null) {
                                   setModalState(() {
                                     selectedFileName = result.files.first.name;
                                     selectedFilePath = result.files.first.path;
-                                    selectedFileBytes = result.files.first.bytes;
+                                    selectedFileBytes =
+                                        result.files.first.bytes;
                                   });
                                 }
                               },
-                              icon: const Icon(Icons.image_outlined, color: Colors.blue),
+                              icon: const Icon(
+                                Icons.image_outlined,
+                                color: Colors.blue,
+                              ),
                               tooltip: 'Add Image',
                             ),
                             IconButton(
                               onPressed: () {},
-                              icon: const Icon(Icons.alternate_email_rounded, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.alternate_email_rounded,
+                                color: Colors.grey,
+                              ),
                               tooltip: 'Tag User',
                             ),
                             IconButton(
                               onPressed: () {},
-                              icon: const Icon(Icons.tag_rounded, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.tag_rounded,
+                                color: Colors.grey,
+                              ),
                               tooltip: 'Hashtag',
                             ),
                             const Spacer(),
                             SizedBox(
                               height: 45,
                               child: ElevatedButton(
-                                onPressed: isPosting ? null : () async {
-                                  if (controller.text.trim().isEmpty) return;
-                                  
-                                  setModalState(() => isPosting = true);
-                                  
-                                  http.MultipartFile? imageFile;
-                                  if (kIsWeb && selectedFileBytes != null) {
-                                    imageFile = http.MultipartFile.fromBytes(
-                                      'image',
-                                      selectedFileBytes,
-                                      filename: selectedFileName,
-                                    );
-                                  } else if (!kIsWeb && selectedFilePath != null) {
-                                    imageFile = await http.MultipartFile.fromPath(
-                                      'image',
-                                      selectedFilePath!,
-                                    );
-                                  }
+                                onPressed: isPosting
+                                    ? null
+                                    : () async {
+                                        if (controller.text.trim().isEmpty)
+                                          return;
 
-                                  final result = await _postService.createPost(
-                                    controller.text, 
-                                    imageFile: imageFile,
-                                    userId: ProfileService().myProfile?.id,
-                                  );
-                                  
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    if (result != null) {
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post published!')));
-                                    }
-                                  }
-                                },
+                                        setModalState(() => isPosting = true);
+
+                                        http.MultipartFile? imageFile;
+                                        if (kIsWeb &&
+                                            selectedFileBytes != null) {
+                                          imageFile =
+                                              http.MultipartFile.fromBytes(
+                                                'image',
+                                                selectedFileBytes,
+                                                filename: selectedFileName,
+                                              );
+                                        } else if (!kIsWeb &&
+                                            selectedFilePath != null) {
+                                          imageFile =
+                                              await http.MultipartFile.fromPath(
+                                                'image',
+                                                selectedFilePath!,
+                                              );
+                                        }
+
+                                        final result = await _postService
+                                            .createPost(
+                                              controller.text,
+                                              imageFile: imageFile,
+                                              userId: ProfileService()
+                                                  .myProfile
+                                                  ?.id,
+                                            );
+
+                                        if (mounted) {
+                                          Navigator.pop(context);
+                                          if (result != null) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Post published!',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryColor,
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                   elevation: 0,
                                 ),
-                                child: isPosting 
-                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Text('Post Now', style: TextStyle(fontWeight: FontWeight.bold)),
+                                child: isPosting
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Post Now',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
@@ -326,7 +416,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => _navigateToProfile(context, post),
                   child: CircleAvatar(
                     radius: 22,
-                    backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${post.username}&background=random'),
+                    backgroundImage: NetworkImage(
+                      'https://ui-avatars.com/api/?name=${post.username}&background=random',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -338,7 +430,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _navigateToProfile(context, post),
                         child: Text(
                           post.username,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       Text(
@@ -350,19 +445,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 if (isOwner)
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_horiz_rounded, color: Colors.grey[400]),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      color: Colors.grey[400],
+                    ),
                     onSelected: (value) async {
                       if (value == 'delete') {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
                             title: const Text('Delete Post'),
-                            content: const Text('Are you sure you want to delete this post?'),
+                            content: const Text(
+                              'Are you sure you want to delete this post?',
+                            ),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
                                 child: const Text('Delete'),
                               ),
                             ],
@@ -384,7 +489,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
                             Text('Delete', style: TextStyle(color: Colors.red)),
                           ],
@@ -393,7 +502,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   )
                 else
-                  IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz_rounded, color: Colors.grey[400])),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      color: Colors.grey[400],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -419,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           else if (post.project != null)
             _buildProjectPreview(context, post),
-          
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -428,21 +543,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 20),
                 InkWell(
                   onTap: () => _showCommentsBottomSheet(context, post),
-                  child: _buildInteractionItem(Icons.chat_bubble_outline_rounded, post.commentCount.toString(), Colors.blue),
+                  child: _buildInteractionItem(
+                    Icons.chat_bubble_outline_rounded,
+                    post.commentCount.toString(),
+                    Colors.blue,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   onPressed: () async {
-                    final saved = await _postService.toggleSavePost(post.id);
+                    final success = await _postService.toggleSavePost(post.id);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(saved ? 'Post saved!' : 'Could not save post')),
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? (post.isSaved
+                                      ? 'Removed from saved'
+                                      : 'Post saved!')
+                                : 'Could not update save status',
+                          ),
+                        ),
                       );
                     }
                   },
-                  icon: const Icon(Icons.bookmark_border_rounded, color: Colors.grey),
+                  icon: Icon(
+                    post.isSaved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: post.isSaved ? AppTheme.primaryColor : Colors.grey,
+                  ),
                 ),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.ios_share_rounded, color: Colors.grey)),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.ios_share_rounded, color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -477,16 +612,27 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Associated Project',
-                  style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   'Project ID: ${post.project}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: Colors.grey,
+          ),
         ],
       ),
     );
@@ -506,7 +652,10 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 6),
           Text(
             post.likeCount.toString(),
-            style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -520,7 +669,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -546,7 +698,9 @@ class _HomeScreenState extends State<HomeScreen> {
       await ProfileService().fetchProfiles(search: post.username);
       if (context.mounted) {
         Navigator.pop(context); // Remove loading
-        final profile = ProfileService().profiles.firstWhere((p) => p.user == post.user);
+        final profile = ProfileService().profiles.firstWhere(
+          (p) => p.user == post.user,
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -557,7 +711,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context); // Remove loading
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not load profile')));
       }
     }
   }
@@ -605,15 +761,22 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
   Future<void> _postComment() async {
     if (_commentController.text.trim().isEmpty) return;
-    
+
     setState(() => _isPosting = true);
-    final comment = await _postService.addComment(widget.post.id, _commentController.text.trim());
-    
+    final comment = await _postService.addComment(
+      widget.post.id,
+      _commentController.text.trim(),
+    );
+
     if (mounted) {
       setState(() => _isPosting = false);
       if (comment != null) {
         _commentController.clear();
         _comments.insert(0, comment);
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to post comment')));
       }
     }
   }
@@ -622,7 +785,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -633,23 +798,32 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             margin: const EdgeInsets.only(top: 12, bottom: 12),
             width: 40,
             height: 4,
-            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Text('Comments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Comments',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const Spacer(),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
               ],
             ),
           ),
           const Divider(),
           Expanded(
             child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _comments.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _comments.isEmpty
                 ? Center(
                     child: Text(
                       'No comments yet.\nBe the first to say something!',
@@ -669,7 +843,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${comment.username}&background=random'),
+                              backgroundImage: NetworkImage(
+                                'https://ui-avatars.com/api/?name=${comment.username}&background=random',
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -683,22 +859,35 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           comment.username,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(comment.content, style: const TextStyle(fontSize: 14)),
+                                        Text(
+                                          comment.content,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
                                       ],
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.only(left: 8, top: 4),
+                                    padding: const EdgeInsets.only(
+                                      left: 8,
+                                      top: 4,
+                                    ),
                                     child: Text(
                                       'Just now',
-                                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -735,17 +924,29 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 IconButton.filled(
                   onPressed: _isPosting ? null : _postComment,
-                  style: IconButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-                  icon: _isPosting 
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.send_rounded, color: Colors.white),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                  ),
+                  icon: _isPosting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded, color: Colors.white),
                 ),
               ],
             ),

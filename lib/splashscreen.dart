@@ -34,7 +34,7 @@ class _SplashscreenState extends State<Splashscreen> {
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       } else { 
-        // If profile fetch fails (e.g. invalid token), go to login
+        
         if (mounted) {
           Navigator.pushReplacement(
             context,

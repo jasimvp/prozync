@@ -29,8 +29,10 @@ class ChatService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         final currentUserId = ProfileService().myProfile?.id ?? 0;
-        final allMessages = data.map((json) => Message.fromJson(json, currentUserId)).toList();
-        
+        final allMessages = data
+            .map((json) => Message.fromJson(json, currentUserId))
+            .toList();
+
         // Group by other user
         final Map<int, List<Message>> grouped = {};
         for (var msg in allMessages) {
@@ -42,20 +44,25 @@ class ChatService extends ChangeNotifier {
 
         _chats = grouped.entries.map((entry) {
           final msgs = entry.value;
-          msgs.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // Newest first
+          msgs.sort(
+            (a, b) => b.createdAt.compareTo(a.createdAt),
+          ); // Newest first
           final lastMsg = msgs.first;
-          final otherUser = lastMsg.isMe ? lastMsg.receiverName : lastMsg.senderName;
-          
+          final otherUser = lastMsg.isMe
+              ? lastMsg.receiverName
+              : lastMsg.senderName;
+
           return ChatPreview(
             id: entry.key, // otherUserId as ID
             otherUserName: otherUser ?? 'User',
-            otherUserImage: 'https://ui-avatars.com/api/?name=${otherUser ?? 'User'}', // Placeholder
+            otherUserImage:
+                'https://ui-avatars.com/api/?name=${otherUser ?? 'User'}', // Placeholder
             lastMessage: lastMsg.text,
             lastMessageTime: lastMsg.createdAt,
             unreadCount: msgs.where((m) => !m.isMe && !m.isRead).length,
           );
         }).toList();
-        
+
         _chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
       }
     } catch (e) {
@@ -71,21 +78,25 @@ class ChatService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // If API supports filtering: /messages/?user=ID or similar. 
+      // If API supports filtering: /messages/?user=ID or similar.
       // For now, we fetch all (cached/lightweight ideally) and filter.
       // Optimally: GET /messages/conversation/?user_id=X
       final response = await _apiService.get('/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         final currentUserId = ProfileService().myProfile?.id ?? 0;
-        final allMessages = data.map((json) => Message.fromJson(json, currentUserId)).toList();
-        
+        final allMessages = data
+            .map((json) => Message.fromJson(json, currentUserId))
+            .toList();
+
         _currentMessages = allMessages.where((m) {
           return (m.senderId == otherUserId && m.isMe == false) ||
-                 (m.isMe == true && m.receiverId == otherUserId);
+              (m.isMe == true && m.receiverId == otherUserId);
         }).toList();
 
-        _currentMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt)); // Oldest first for chat view
+        _currentMessages.sort(
+          (a, b) => a.createdAt.compareTo(b.createdAt),
+        ); // Oldest first for chat view
       }
     } catch (e) {
       debugPrint('Error fetching messages: $e');
@@ -100,17 +111,20 @@ class ChatService extends ChangeNotifier {
       final response = await _apiService.post('/messages/', {
         'receiver': receiverId,
         'message': text,
-        'is_read': false // Default
+        'is_read': false, // Default
       });
-      
-      if (response.statusCode == 201) {
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final currentUserId = ProfileService().myProfile?.id ?? 0;
-        final newMessage = Message.fromJson(jsonDecode(response.body), currentUserId);
+        final newMessage = Message.fromJson(
+          jsonDecode(response.body),
+          currentUserId,
+        );
         _currentMessages.add(newMessage); // Add locally
         notifyListeners();
-        
+
         // Refresh chat list to update last message
-        fetchChats(); 
+        fetchChats();
         return true;
       }
     } catch (e) {

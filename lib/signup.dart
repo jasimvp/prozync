@@ -21,15 +21,18 @@ class _SignupscreenState extends State<Signupscreen> {
   bool _isLoading = false;
 
   void _handleSignup() async {
-    if (_emailController.text.isEmpty || _usernameController.text.isEmpty || _passwordController.text.isEmpty || _fullNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+    if (_emailController.text.isEmpty ||
+        _usernameController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _fullNameController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
 
     setState(() => _isLoading = true);
-    
+
     final result = await _authService.signup({
       'email': _emailController.text.trim(),
       'username': _usernameController.text.trim(),
@@ -52,7 +55,11 @@ class _SignupscreenState extends State<Signupscreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Signup failed. Please try again.')),
+          SnackBar(
+            content: Text(
+              result['message'] ?? 'Signup failed. Please try again.',
+            ),
+          ),
         );
       }
     }
@@ -75,7 +82,7 @@ class _SignupscreenState extends State<Signupscreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: screenHeight * 0.06),
+            SizedBox(height: screenHeight * 0.02),
             Padding(
               padding: EdgeInsets.only(left: screenWidth * 0.1),
               child: Text(
@@ -98,7 +105,7 @@ class _SignupscreenState extends State<Signupscreen> {
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.12),
+            SizedBox(height: screenHeight * 0.05),
             Center(
               child: SizedBox(
                 width: screenWidth * 0.8,
@@ -177,7 +184,10 @@ class _SignupscreenState extends State<Signupscreen> {
                         });
                       },
                     ),
-                    prefixIcon: Icon(Icons.lock_outline, color: Colors.blue[900]),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: Colors.blue[900],
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -185,7 +195,7 @@ class _SignupscreenState extends State<Signupscreen> {
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.06),
+            SizedBox(height: screenHeight * 0.04),
             Center(
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSignup,
@@ -197,92 +207,95 @@ class _SignupscreenState extends State<Signupscreen> {
                   minimumSize: Size(screenWidth * 0.5, screenHeight * 0.06),
                   backgroundColor: Colors.blue[900],
                 ),
-                child: _isLoading 
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(
-                      'SIGN UP',
-                      style: TextStyle(fontSize: screenWidth * 0.04),
-                    ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'SIGN UP',
+                        style: TextStyle(fontSize: screenWidth * 0.04),
+                      ),
               ),
             ),
-          SizedBox(height: screenHeight * 0.06),
-          Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  thickness: 2,
-                  indent: screenWidth * 0.1,
-                  endIndent: screenWidth * 0.02,
-                ),
-              ),
-              Text('or'),
-              Expanded(
-                child: Divider(
-                  thickness: 2,
-                  indent: screenWidth * 0.02,
-                  endIndent: screenWidth * 0.1,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: screenHeight * 0.06),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.facebook,
-                color: Colors.blue[900],
-                size: screenWidth * 0.1,
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              FaIcon(
-                FontAwesomeIcons.google,
-                color: Colors.green,
-                size: screenWidth * 0.08,
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              Icon(Icons.apple, color: Colors.black, size: screenWidth * 0.1),
-            ],
-          ),
-          SizedBox(height: screenHeight * 0.08),
-          Container(
-            margin: EdgeInsets.only(left: screenWidth * 0.1),
-            child: Row(
+            SizedBox(height: screenHeight * 0.03),
+            Row(
               children: [
-                Text(
-                  "Already have an account?",
-                  style: GoogleFonts.manrope(
-                    color: Colors.blueGrey,
-                    fontSize: screenWidth * 0.04,
+                Expanded(
+                  child: Divider(
+                    thickness: 2,
+                    indent: screenWidth * 0.1,
+                    endIndent: screenWidth * 0.02,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.02),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                    );
-                  },
-                  child: Text(
-                    'Sign In',
-                    style: GoogleFonts.manrope(
-                      color: Colors.blue[900],
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.04,
-                    ),
+                Text('or'),
+                Expanded(
+                  child: Divider(
+                    thickness: 2,
+                    indent: screenWidth * 0.02,
+                    endIndent: screenWidth * 0.1,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            SizedBox(height: screenHeight * 0.03),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.facebook,
+                  color: Colors.blue[900],
+                  size: screenWidth * 0.1,
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                FaIcon(
+                  FontAwesomeIcons.google,
+                  color: Colors.green,
+                  size: screenWidth * 0.08,
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                Icon(Icons.apple, color: Colors.black, size: screenWidth * 0.1),
+              ],
+            ),
+            SizedBox(height: screenHeight * 0.04),
+            Container(
+              margin: EdgeInsets.only(left: screenWidth * 0.1),
+              child: Row(
+                children: [
+                  Text(
+                    "Already have an account?",
+                    style: GoogleFonts.manrope(
+                      color: Colors.blueGrey,
+                      fontSize: screenWidth * 0.04,
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                      );
+                    },
+                    child: Text(
+                      'Sign In',
+                      style: GoogleFonts.manrope(
+                        color: Colors.blue[900],
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.04,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
