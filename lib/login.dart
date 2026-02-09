@@ -67,195 +67,191 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
+    // Using LayoutBuilder to ensure content fits the screen or scrolls if necessary (small screens)
     return Scaffold(
-      // appBar: AppBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: screenHeight * 0.02),
-
-            Padding(
-              padding: EdgeInsets.only(left: screenWidth * 0.1),
-              child: Text(
-                'Welcome !',
-                style: GoogleFonts.manrope(
-                  color: Colors.blue[900],
-                  fontSize: screenWidth * 0.08,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
-            SizedBox(height: screenHeight * 0.01),
-            Padding(
-              padding: EdgeInsets.only(left: screenWidth * 0.1),
-              child: Text(
-                'sign in to continue',
-                style: GoogleFonts.manrope(
-                  color: Colors.blueGrey,
-                  fontSize: screenWidth * 0.04,
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.05),
-            Center(
-              child: SizedBox(
-                width: screenWidth * 0.8,
-                child: TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    helperText: 'Use the username you created during signup',
-                    prefixIcon: Icon(
-                      Icons.person_outline,
-                      color: Colors.blue[900],
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            Center(
-              child: SizedBox(
-                width: screenWidth * 0.8,
-                child: TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(
-                      Icons.lock_outline,
-                      color: Colors.blue[900],
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.04),
-            Center(
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[900],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  minimumSize: Size(screenWidth * 0.5, screenHeight * 0.06),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Spacer(flex: 2),
+                      Text(
+                        'Welcome !',
+                        style: GoogleFonts.manrope(
+                          color: Colors.blue[900],
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
                         ),
-                      )
-                    : Text(
-                        'LOGIN',
-                        style: TextStyle(fontSize: screenWidth * 0.04),
                       ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.01),
-            GestureDetector(
-              onTap: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => ForgotScreen()),
-              ),
-              child: Center(
-                child: Text(
-                  'forgot password?',
-                  style: GoogleFonts.manrope(
-                    color: Colors.blue[900],
-                    fontSize: screenWidth * 0.04,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.04),
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    thickness: 2,
-                    indent: screenWidth * 0.1,
-                    endIndent: screenWidth * 0.02,
-                  ),
-                ),
-                Text('or'),
-                Expanded(
-                  child: Divider(
-                    thickness: 2,
-                    indent: screenWidth * 0.02,
-                    endIndent: screenWidth * 0.1,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: screenHeight * 0.04),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.facebook,
-                  color: Colors.blue[900],
-                  size: screenWidth * 0.1,
-                ),
-                SizedBox(width: screenWidth * 0.03),
-                FaIcon(
-                  FontAwesomeIcons.google,
-                  color: Colors.green,
-                  size: screenWidth * 0.08,
-                ),
-                SizedBox(width: screenWidth * 0.03),
-                Icon(Icons.apple, color: Colors.black, size: screenWidth * 0.1),
-              ],
-            ),
-            SizedBox(height: screenHeight * 0.05),
-            Container(
-              margin: EdgeInsets.only(left: screenWidth * 0.1),
-              child: Row(
-                children: [
-                  Text(
-                    "Don't have an account?",
-                    style: GoogleFonts.manrope(
-                      color: Colors.blueGrey,
-                      fontSize: screenWidth * 0.04,
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => Signupscreen()),
-                      );
-                    },
-                    child: Text(
-                      'Sign Up',
-                      style: GoogleFonts.manrope(
-                        color: Colors.blue[900],
-                        fontWeight: FontWeight.bold,
-                        fontSize: screenWidth * 0.04,
+                      const SizedBox(height: 8),
+                      Text(
+                        'sign in to continue',
+                        style: GoogleFonts.manrope(
+                          color: Colors.blueGrey,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
+                      const Spacer(flex: 3),
+                      Center(
+                        child: TextFormField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            helperText:
+                                'Use the username you created during signup',
+                            prefixIcon: Icon(
+                              Icons.person_outline,
+                              color: Colors.blue[900],
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: Colors.blue[900],
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(flex: 2),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[900],
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            minimumSize: const Size(double.infinity, 50),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'LOGIN',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ForgotScreen(),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'forgot password?',
+                            style: GoogleFonts.manrope(
+                              color: Colors.blue[900],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(flex: 2),
+                      const Row(
+                        children: [
+                          Expanded(child: Divider(thickness: 2)),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('or'),
+                          ),
+                          Expanded(child: Divider(thickness: 2)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.facebook,
+                            color: Colors.blue[900],
+                            size: 40,
+                          ),
+                          const SizedBox(width: 24),
+                          const FaIcon(
+                            FontAwesomeIcons.google,
+                            color: Colors.green,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 24),
+                          const Icon(
+                            Icons.apple,
+                            color: Colors.black,
+                            size: 40,
+                          ),
+                        ],
+                      ),
+                      const Spacer(flex: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Don't have an account?",
+                            style: GoogleFonts.manrope(
+                              color: Colors.blueGrey,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Signupscreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Sign Up',
+                              style: GoogleFonts.manrope(
+                                color: Colors.blue[900],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

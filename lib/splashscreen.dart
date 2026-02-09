@@ -27,14 +27,13 @@ class _SplashscreenState extends State<Splashscreen> {
     if (isLoggedIn && mounted) {
       // Prefetch profile and verify token
       final success = await ProfileService().fetchMyProfile();
-      
+
       if (success && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
-      } else { 
-        
+      } else {
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -55,29 +54,35 @@ class _SplashscreenState extends State<Splashscreen> {
         builder: (context, constraints) {
           return SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
-              ),
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 20.0,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Logo
                       CircleAvatar(
                         radius: constraints.maxWidth * 0.25,
-                        backgroundColor: Colors.transparent, // Ensure clean background
-                        backgroundImage: const AssetImage('assets/icon/prozync.png'),
+                        backgroundColor:
+                            Colors.transparent, // Ensure clean background
+                        backgroundImage: const AssetImage(
+                          'assets/icon/prozync.png',
+                        ),
                       ),
                       SizedBox(height: constraints.maxHeight * 0.04),
-                      
+
                       // Welcome Text
                       Text(
                         'Hello !',
                         style: GoogleFonts.pacifico(
                           color: Colors.blue[900],
-                          fontSize: constraints.maxWidth * 0.09, // slightly larger for emphasis
+                          fontSize:
+                              constraints.maxWidth *
+                              0.09, // slightly larger for emphasis
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -85,12 +90,16 @@ class _SplashscreenState extends State<Splashscreen> {
 
                       // Login Button
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 400), // Max width for wider screens
+                        constraints: const BoxConstraints(
+                          maxWidth: 400,
+                        ), // Max width for wider screens
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -106,7 +115,7 @@ class _SplashscreenState extends State<Splashscreen> {
                           child: const Text(
                             'LOGIN',
                             style: TextStyle(
-                              fontSize: 18, 
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
                             ),
@@ -122,7 +131,9 @@ class _SplashscreenState extends State<Splashscreen> {
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const Signupscreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const Signupscreen(),
+                              ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -132,7 +143,10 @@ class _SplashscreenState extends State<Splashscreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            side: BorderSide(color: Colors.blue.shade900, width: 2),
+                            side: BorderSide(
+                              color: Colors.blue.shade900,
+                              width: 2,
+                            ),
                             elevation: 0,
                             minimumSize: const Size(double.infinity, 50),
                           ),

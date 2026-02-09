@@ -25,12 +25,16 @@ class Message {
     return Message(
       id: json['id'],
       senderId: json['sender'],
-      senderName: json['sender_name'] ?? '',
+      senderName: json['sender_name'] ?? 'User',
       receiverId: json['receiver'],
       receiverName: json['receiver_name'],
       text: json['message'] ?? '',
       isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['timestamp']),
+      createdAt: DateTime.parse(
+        json['timestamp'] ??
+            json['created_at'] ??
+            DateTime.now().toIso8601String(),
+      ),
       isMe: json['sender'] == currentUserId,
     );
   }
@@ -57,9 +61,12 @@ class ChatPreview {
     return ChatPreview(
       id: json['id'],
       otherUserName: json['other_user_name'] ?? 'User',
-      otherUserImage: json['other_user_image'] ?? 'https://ui-avatars.com/api/?name=User',
+      otherUserImage:
+          json['other_user_image'] ?? 'https://ui-avatars.com/api/?name=User',
       lastMessage: json['last_message'] ?? '',
-      lastMessageTime: DateTime.parse(json['last_message_time'] ?? DateTime.now().toIso8601String()),
+      lastMessageTime: DateTime.parse(
+        json['last_message_time'] ?? DateTime.now().toIso8601String(),
+      ),
       unreadCount: json['unread_count'] ?? 0,
     );
   }

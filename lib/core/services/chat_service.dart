@@ -115,7 +115,12 @@ class ChatService extends ChangeNotifier {
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        // Ensure we have the current user ID to correctly identify 'isMe'
+        if (ProfileService().myProfile == null) {
+          await ProfileService().fetchMyProfile();
+        }
         final currentUserId = ProfileService().myProfile?.id ?? 0;
+
         final newMessage = Message.fromJson(
           jsonDecode(response.body),
           currentUserId,
@@ -126,6 +131,10 @@ class ChatService extends ChangeNotifier {
         // Refresh chat list to update last message
         fetchChats();
         return true;
+      } else {
+        debugPrint(
+          'Send message failed: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error sending message: $e');

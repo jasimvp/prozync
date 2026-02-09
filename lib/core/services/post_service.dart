@@ -89,7 +89,9 @@ class PostService extends ChangeNotifier {
 
   Future<bool> toggleSavePost(int id) async {
     try {
+      // Try with trailing slash first, common in Django
       final response = await _apiService.post('/posts/$id/save/', {});
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final index = _posts.indexWhere((p) => p.id == id);
         if (index != -1) {
@@ -103,12 +105,16 @@ class PostService extends ChangeNotifier {
             content: post.content,
             likeCount: post.likeCount,
             commentCount: post.commentCount,
-            isSaved: !post.isSaved,
+            isSaved: !post.isSaved, // Toggle local state
             createdAt: post.createdAt,
           );
           notifyListeners();
         }
         return true;
+      } else {
+        debugPrint(
+          'Save post failed: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error saving post: $e');
@@ -134,17 +140,32 @@ class PostService extends ChangeNotifier {
       final response = await _apiService.post('/posts/$postId/comments/', {
         'content': content,
       });
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         final comment = Comment.fromJson(jsonDecode(response.body));
         // Update local post comment count if possible
         final index = _posts.indexWhere((p) => p.id == postId);
         if (index != -1) {
-          // Ideally we'd update the post object here, but it's immutable.
-          // We can trigger a refresh or handle it in the UI.
-          fetchPosts(); // Refresh to get updated counts
+          final post = _posts[index];
+          _posts[index] = Post(
+            id: post.id,
+            user: post.user,
+            username: post.username,
+            project: post.project,
+            image: post.image,
+            content: post.content,
+            likeCount: post.likeCount,
+            commentCount: post.commentCount + 1, // Increment comment count
+            isSaved: post.isSaved,
+            createdAt: post.createdAt,
+          );
         }
         notifyListeners();
         return comment;
+      } else {
+        debugPrint(
+          'Add comment failed: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error adding comment: $e');

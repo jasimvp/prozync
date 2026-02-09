@@ -22,8 +22,8 @@ class Comment {
       username: json['username'] ?? 'User',
       post: json['post'] ?? 0,
       content: json['content'] ?? '',
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : DateTime.now(),
     );
   }
