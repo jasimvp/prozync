@@ -57,6 +57,46 @@ class Project {
     return '${AppConstants.baseUrl}/$path';
   }
 
+  Project copyWith({
+    int? id,
+    int? owner,
+    String? ownerName,
+    String? projectName,
+    String? slug,
+    String? description,
+    String? technology,
+    String? projectZip,
+    String? coverImage,
+    String? readme,
+    bool? isPrivate,
+    String? collaboratorCount,
+    List<dynamic>? collaborators,
+    DateTime? createdAt,
+    bool? isPinned,
+    int? likeCount,
+    bool? isLiked,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      owner: owner ?? this.owner,
+      ownerName: ownerName ?? this.ownerName,
+      projectName: projectName ?? this.projectName,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      technology: technology ?? this.technology,
+      projectZip: projectZip ?? this.projectZip,
+      coverImage: coverImage ?? this.coverImage,
+      readme: readme ?? this.readme,
+      isPrivate: isPrivate ?? this.isPrivate,
+      collaboratorCount: collaboratorCount ?? this.collaboratorCount,
+      collaborators: collaborators ?? this.collaborators,
+      createdAt: createdAt ?? this.createdAt,
+      isPinned: isPinned ?? this.isPinned,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
+    );
+  }
+
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
       id: json['id'],

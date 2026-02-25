@@ -10,10 +10,7 @@ import 'package:prozync/core/services/project_service.dart';
 class OtherUserProfileScreen extends StatefulWidget {
   final Profile profile;
 
-  OtherUserProfileScreen({
-    super.key,
-    required this.profile,
-  });
+  OtherUserProfileScreen({super.key, required this.profile});
 
   @override
   State<OtherUserProfileScreen> createState() => _OtherUserProfileScreenState();
@@ -33,10 +30,14 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   Future<void> _loadUserProjects() async {
     try {
       // Assuming Search by username or owner ID works for fetching specific user projects
-      final allProjects = await ProjectService().fetchProjects(search: widget.profile.username);
+      final allProjects = await ProjectService().fetchProjects(
+        search: widget.profile.username,
+      );
       if (mounted) {
         setState(() {
-          userProjects = ProjectService().projects.where((p) => p.owner == widget.profile.id).toList();
+          userProjects = ProjectService().projects
+              .where((p) => p.owner == widget.profile.id)
+              .toList();
           isLoadingProjects = false;
         });
       }
@@ -92,10 +93,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.indigo[900]!,
-                    Colors.indigo[600]!,
-                  ],
+                  colors: [Colors.indigo[900]!, Colors.indigo[600]!],
                 ),
               ),
             ),
@@ -126,8 +124,12 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: widget.profile.profilePic != null ? NetworkImage(widget.profile.profilePic!) : null,
-                    child: widget.profile.profilePic == null ? Icon(Icons.person, size: 60, color: Colors.grey[400]) : null,
+                    backgroundImage: widget.profile.profilePic != null
+                        ? NetworkImage(widget.profile.profilePic!)
+                        : null,
+                    child: widget.profile.profilePic == null
+                        ? Icon(Icons.person, size: 60, color: Colors.grey[400])
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -151,7 +153,11 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: Colors.blue[200]),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: Colors.blue[200],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Remote', // You might want to add location to Profile model if available
@@ -180,7 +186,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () async {
-                  final success = await ProfileService().followProfile(widget.profile.id);
+                  final success = await ProfileService().followProfile(
+                    widget.profile.id,
+                  );
                   if (success && mounted) {
                     setState(() {
                       isFollowing = !isFollowing;
@@ -188,10 +196,14 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isFollowing ? Colors.grey[200] : AppTheme.primaryColor,
+                  backgroundColor: isFollowing
+                      ? Colors.grey[200]
+                      : AppTheme.primaryColor,
                   foregroundColor: isFollowing ? Colors.black : Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
                 child: Text(
                   isFollowing ? 'Following' : 'Follow',
@@ -210,15 +222,19 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
-                        chatId: 0, // In a real app, you'd fetch or create a conversation
+                        chatId: widget.profile.user,
                         userName: widget.profile.fullName,
-                        userImage: widget.profile.profilePic ?? '',
+                        userImage:
+                            widget.profile.profilePic ??
+                            'https://ui-avatars.com/api/?name=${widget.profile.fullName}',
                       ),
                     ),
                   );
                 },
                 style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   side: BorderSide(color: AppTheme.primaryColor, width: 1.5),
                 ),
                 child: const Text(
@@ -245,25 +261,33 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem(context, widget.profile.repoCount, 'Projects')),
+          Expanded(
+            child: _buildStatItem(
+              context,
+              widget.profile.repoCount,
+              'Projects',
+            ),
+          ),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, widget.profile.followerCount, 'Followers')),
+          Expanded(
+            child: _buildStatItem(
+              context,
+              widget.profile.followerCount,
+              'Followers',
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildVerticalDivider() {
-    return Container(
-      height: 30,
-      width: 1,
-      color: Colors.grey.withOpacity(0.2),
-    );
+    return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.2));
   }
 
   Widget _buildStatItem(BuildContext context, String value, String label) {
@@ -271,10 +295,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -309,7 +330,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
             child: Text(
-              widget.profile.bio.isNotEmpty ? widget.profile.bio : 'No bio provided.',
+              widget.profile.bio.isNotEmpty
+                  ? widget.profile.bio
+                  : 'No bio provided.',
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: 15,
@@ -336,7 +359,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           if (isLoadingProjects)
             const Center(child: CircularProgressIndicator())
           else if (userProjects.isEmpty)
-            Text('No works published yet.', style: TextStyle(color: Colors.grey[500]))
+            Text(
+              'No works published yet.',
+              style: TextStyle(color: Colors.grey[500]),
+            )
           else
             ListView.builder(
               shrinkWrap: true,
@@ -363,7 +389,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: ListTile(
@@ -372,13 +398,17 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: (project.isPrivate ? Colors.orange : Colors.blue).withOpacity(0.1),
+            color: (project.isPrivate ? Colors.orange : Colors.blue)
+                .withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            image: project.coverImage != null 
-                ? DecorationImage(image: NetworkImage(project.coverImage!), fit: BoxFit.cover) 
+            image: project.coverImage != null
+                ? DecorationImage(
+                    image: NetworkImage(project.coverImage!),
+                    fit: BoxFit.cover,
+                  )
                 : null,
           ),
-          child: project.coverImage == null 
+          child: project.coverImage == null
               ? Icon(
                   project.isPrivate ? Icons.lock_outline : Icons.code_rounded,
                   color: project.isPrivate ? Colors.orange : Colors.blue,
@@ -403,9 +433,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProjectDetailsScreen(
-                project: project,
-              ),
+              builder: (context) => ProjectDetailsScreen(project: project),
             ),
           );
         },

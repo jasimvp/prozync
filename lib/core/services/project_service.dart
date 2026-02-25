@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/project_model.dart';
 import '../../models/social_model.dart';
 import 'api_service.dart';
+import 'profile_service.dart';
 
 class ProjectService extends ChangeNotifier {
   static final ProjectService _instance = ProjectService._internal();
@@ -13,11 +14,41 @@ class ProjectService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   List<Project> _projects = [];
   List<Project> _myRepos = [];
+  List<Project> _pinnedProjects = [];
   List<Invitation> _invitations = [];
   bool _isLoading = false;
 
   List<Project> get projects => _projects;
   List<Project> get myRepos => _myRepos;
+
+  // My pinned projects (own work)
+  List<Project> get pinnedProjects {
+    final myId = ProfileService().myProfile?.id;
+    if (myId == null) return [];
+
+    final all = [..._myRepos, ..._pinnedProjects, ..._projects];
+    final seen = <int>{};
+    return all.where((p) {
+      if (seen.contains(p.id)) return false;
+      seen.add(p.id);
+      return p.isPinned && p.owner == myId;
+    }).toList();
+  }
+
+  // Saved projects (others' work)
+  List<Project> get savedProjects {
+    final myId = ProfileService().myProfile?.id;
+    if (myId == null) return [];
+
+    final all = [..._pinnedProjects, ..._projects, ..._myRepos];
+    final seen = <int>{};
+    return all.where((p) {
+      if (seen.contains(p.id)) return false;
+      seen.add(p.id);
+      return p.isPinned && p.owner != myId;
+    }).toList();
+  }
+
   List<Invitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
 
@@ -54,8 +85,24 @@ class ProjectService extends ChangeNotifier {
         final List<dynamic> data = jsonDecode(response.body);
         _myRepos = data.map((json) => Project.fromJson(json)).toList();
       }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchPinnedProjects() async {
+    _isLoading = true;
+    Future.microtask(() => notifyListeners());
+
+    try {
+      final response = await _apiService.get('/projects/pinned/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _pinnedProjects = data.map((json) => Project.fromJson(json)).toList();
+      }
     } catch (e) {
-      debugPrint('Error fetching my repos: $e');
+      debugPrint('Error fetching pinned projects: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -106,52 +153,106 @@ class ProjectService extends ChangeNotifier {
     return [
       ..._projects,
       ..._myRepos,
+      ..._pinnedProjects,
     ].firstWhere((p) => p.id == id, orElse: () => fallback);
   }
 
-  List<Project> get savedProjects {
-    final all = [..._projects, ..._myRepos];
-    final seen = <int>{};
-    return all.where((p) {
-      if (seen.contains(p.id)) return false;
-      seen.add(p.id);
-      return p.isPinned;
-    }).toList();
-  }
-
   Future<bool> togglePin(int projectId) async {
+    // 1. Find the project in all lists
+    int index = _projects.indexWhere((p) => p.id == projectId);
+    int myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+    int pinnedIndex = _pinnedProjects.indexWhere((p) => p.id == projectId);
+
+    Project? originalProject;
+    if (index != -1)
+      originalProject = _projects[index];
+    else if (myRepoIndex != -1)
+      originalProject = _myRepos[myRepoIndex];
+    else if (pinnedIndex != -1)
+      originalProject = _pinnedProjects[pinnedIndex];
+
+    if (originalProject == null) return false;
+
+    final bool wasPinned = originalProject.isPinned;
+    final bool newPinnedState = !wasPinned;
+
+    // 2. Perform Optimistic Update
+    final optimisticProject = originalProject.copyWith(
+      isPinned: newPinnedState,
+    );
+
+    // Update all lists where the project exists
+    if (index != -1) _projects[index] = optimisticProject;
+    if (myRepoIndex != -1) _myRepos[myRepoIndex] = optimisticProject;
+
+    // Manage _pinnedProjects list based on newPinnedState
+    if (newPinnedState) {
+      if (pinnedIndex == -1) {
+        _pinnedProjects.add(optimisticProject);
+      } else {
+        _pinnedProjects[pinnedIndex] = optimisticProject;
+      }
+    } else {
+      if (pinnedIndex != -1) {
+        _pinnedProjects.removeAt(pinnedIndex);
+      }
+    }
+
+    notifyListeners();
+
     try {
       final response = await _apiService.post('/projects/$projectId/pin/', {});
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final updatedProject = Project.fromJson(jsonDecode(response.body));
-        bool updated = false;
+        final Map<String, dynamic> body = jsonDecode(response.body);
 
-        final index = _projects.indexWhere((p) => p.id == projectId);
-        if (index != -1) {
-          _projects[index] = updatedProject;
-          updated = true;
-        }
-
-        final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
-        if (myRepoIndex != -1) {
-          _myRepos[myRepoIndex] = updatedProject;
-          updated = true;
-        }
-
-        if (updated) {
-          notifyListeners();
-          return true;
+        Project updatedProject;
+        if (body.containsKey('id')) {
+          // Full object returned
+          updatedProject = Project.fromJson(body);
         } else {
-          // If not in lists, maybe we should refresh or just return success
-          fetchProjects();
-          fetchMyRepos();
-          return true;
+          // Partial object returned (like just {"is_pinned": true})
+          final bool serverPinnedState = body['is_pinned'] ?? newPinnedState;
+          updatedProject = originalProject.copyWith(
+            isPinned: serverPinnedState,
+          );
         }
+
+        // Final sync with server truth
+        _updateProjectInLists(projectId, updatedProject);
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback
+        _updateProjectInLists(projectId, originalProject);
+        notifyListeners();
+        return false;
       }
     } catch (e) {
       debugPrint('Error toggling pin: $e');
+      // Rollback
+      _updateProjectInLists(projectId, originalProject);
+      notifyListeners();
+      return false;
     }
-    return false;
+  }
+
+  void _updateProjectInLists(int projectId, Project project) {
+    final index = _projects.indexWhere((p) => p.id == projectId);
+    if (index != -1) _projects[index] = project;
+
+    final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+    if (myRepoIndex != -1) _myRepos[myRepoIndex] = project;
+
+    final pinnedIndex = _pinnedProjects.indexWhere((p) => p.id == projectId);
+    if (project.isPinned) {
+      if (pinnedIndex == -1)
+        _pinnedProjects.add(project);
+      else
+        _pinnedProjects[pinnedIndex] = project;
+    } else {
+      if (pinnedIndex != -1) _pinnedProjects.removeAt(pinnedIndex);
+    }
   }
 
   Future<void> fetchInvitations() async {
@@ -197,26 +298,54 @@ class ProjectService extends ChangeNotifier {
   }
 
   Future<bool> likeProject(int projectId) async {
+    int index = _projects.indexWhere((p) => p.id == projectId);
+    int myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+
+    if (index == -1 && myRepoIndex == -1) return false;
+
+    Project originalProject = index != -1
+        ? _projects[index]
+        : _myRepos[myRepoIndex];
+    final bool wasLiked = originalProject.isLiked;
+
+    // Optimistic state update
+    final optimisticProject = originalProject.copyWith(
+      isLiked: !wasLiked,
+      likeCount: wasLiked
+          ? originalProject.likeCount - 1
+          : originalProject.likeCount + 1,
+    );
+
+    if (index != -1) _projects[index] = optimisticProject;
+    if (myRepoIndex != -1) _myRepos[myRepoIndex] = optimisticProject;
+    notifyListeners();
+
     try {
       final response = await _apiService.post('/projects/$projectId/like/', {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
-        final index = _projects.indexWhere((p) => p.id == projectId);
-        if (index != -1) {
-          final updatedProject = Project.fromJson(body);
-          _projects[index] = updatedProject;
+        final updatedProject = Project.fromJson(body);
 
-          final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
-          if (myRepoIndex != -1) {
-            _myRepos[myRepoIndex] = updatedProject;
-          }
+        // Final update with real data
+        index = _projects.indexWhere((p) => p.id == projectId);
+        if (index != -1) _projects[index] = updatedProject;
 
-          notifyListeners();
-          return true;
-        }
+        myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+        if (myRepoIndex != -1) _myRepos[myRepoIndex] = updatedProject;
+
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback
+        if (index != -1) _projects[index] = originalProject;
+        if (myRepoIndex != -1) _myRepos[myRepoIndex] = originalProject;
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error liking project: $e');
+      if (index != -1) _projects[index] = originalProject;
+      if (myRepoIndex != -1) _myRepos[myRepoIndex] = originalProject;
+      notifyListeners();
     }
     return false;
   }

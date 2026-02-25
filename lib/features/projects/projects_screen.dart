@@ -32,7 +32,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _projectService,
+      listenable: Listenable.merge([_projectService, ProfileService()]),
       builder: (context, _) {
         return DefaultTabController(
           length: 2,
@@ -237,20 +237,28 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ListenableBuilder(
-                          listenable: _projectService,
+                          listenable: Listenable.merge([
+                            _projectService,
+                            ProfileService(),
+                          ]),
                           builder: (context, _) {
-                            final currentProject = _projectService.projects
-                                .firstWhere(
-                                  (p) => p.id == project.id,
-                                  orElse: () => project,
-                                );
+                            final currentProject = _projectService
+                                .getProjectById(project.id, project);
+                            final isOwner =
+                                ProfileService().myProfile?.id ==
+                                currentProject.owner;
+
                             return IconButton(
                               icon: Icon(
                                 currentProject.isPinned
-                                    ? Icons.star
-                                    : Icons.star_border,
+                                    ? (isOwner
+                                          ? Icons.push_pin
+                                          : Icons.bookmark_rounded)
+                                    : (isOwner
+                                          ? Icons.push_pin_outlined
+                                          : Icons.bookmark_border_rounded),
                                 color: currentProject.isPinned
-                                    ? Colors.amber
+                                    ? (isOwner ? Colors.blue : Colors.amber)
                                     : Colors.grey[400],
                               ),
                               onPressed: () async {

@@ -71,17 +71,24 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               ListenableBuilder(
                 listenable: ProjectService(),
                 builder: (context, _) {
-                  final currentProject = ProjectService().projects.firstWhere(
-                    (p) => p.id == widget.project.id,
-                    orElse: () => widget.project,
+                  final currentProject = ProjectService().getProjectById(
+                    widget.project.id,
+                    widget.project,
                   );
                   final isPinned = currentProject.isPinned;
+                  final isOwner =
+                      ProfileService().myProfile?.id == widget.project.owner;
+
                   return IconButton(
                     icon: Icon(
                       isPinned
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      color: isPinned ? Colors.amber : Colors.white,
+                          ? (isOwner ? Icons.push_pin : Icons.bookmark_rounded)
+                          : (isOwner
+                                ? Icons.push_pin_outlined
+                                : Icons.bookmark_border_rounded),
+                      color: isPinned
+                          ? (isOwner ? Colors.blue : Colors.amber)
+                          : Colors.white,
                     ),
                     onPressed: () async {
                       final success = await ProjectService().togglePin(
@@ -91,7 +98,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              isPinned ? 'Project unpinned' : 'Project pinned!',
+                              isOwner
+                                  ? (isPinned
+                                        ? 'Project unpinned'
+                                        : 'Project pinned!')
+                                  : (isPinned
+                                        ? 'Project removed from saved'
+                                        : 'Project saved!'),
                             ),
                             behavior: SnackBarBehavior.floating,
                           ),

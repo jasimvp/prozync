@@ -28,7 +28,7 @@ class ChatService extends ChangeNotifier {
       final response = await _apiService.get('/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
         final allMessages = data
             .map((json) => Message.fromJson(json, currentUserId))
             .toList();
@@ -84,7 +84,7 @@ class ChatService extends ChangeNotifier {
       final response = await _apiService.get('/messages/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
         final allMessages = data
             .map((json) => Message.fromJson(json, currentUserId))
             .toList();
@@ -119,7 +119,7 @@ class ChatService extends ChangeNotifier {
         if (ProfileService().myProfile == null) {
           await ProfileService().fetchMyProfile();
         }
-        final currentUserId = ProfileService().myProfile?.id ?? 0;
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
 
         final newMessage = Message.fromJson(
           jsonDecode(response.body),

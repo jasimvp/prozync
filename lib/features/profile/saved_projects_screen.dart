@@ -3,9 +3,21 @@ import '../../core/services/project_service.dart';
 import '../../models/project_model.dart';
 import '../projects/project_details_screen.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/profile_service.dart';
 
-class SavedProjectsScreen extends StatelessWidget {
+class SavedProjectsScreen extends StatefulWidget {
   const SavedProjectsScreen({super.key});
+
+  @override
+  State<SavedProjectsScreen> createState() => _SavedProjectsScreenState();
+}
+
+class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    ProjectService().fetchPinnedProjects();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +30,10 @@ class SavedProjectsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
       ),
       body: ListenableBuilder(
-        listenable: ProjectService(),
+        listenable: Listenable.merge([ProjectService(), ProfileService()]),
         builder: (context, _) {
           final savedProjects = ProjectService().savedProjects;
+          // ...
           if (savedProjects.isEmpty) {
             return Center(
               child: Column(
@@ -42,7 +55,7 @@ class SavedProjectsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Projects you pin will appear here.',
+                    'Projects you save from others will appear here.',
                     style: TextStyle(color: Colors.grey[400]),
                   ),
                 ],
@@ -130,7 +143,10 @@ class SavedProjectsScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.star, color: Colors.amber),
+                      icon: const Icon(
+                        Icons.bookmark_rounded,
+                        color: Colors.amber,
+                      ),
                       onPressed: () {
                         ProjectService().togglePin(project.id);
                       },

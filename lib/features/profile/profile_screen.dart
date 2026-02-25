@@ -26,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _profileService.fetchMyProfile();
+    ProjectService().fetchPinnedProjects();
   }
 
   @override
@@ -39,39 +40,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
           body: _profileService.isLoading
               ? const Center(child: CircularProgressIndicator())
               : profile == null
-                  ? Center(
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Failed to load profile',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => _profileService.fetchMyProfile(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : CustomScrollView(
+                  slivers: [
+                    _buildSliverAppBar(context, profile),
+                    SliverToBoxAdapter(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                          const SizedBox(height: 16),
-                          const Text('Failed to load profile', style: TextStyle(fontSize: 18)),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: () => _profileService.fetchMyProfile(),
-                            child: const Text('Retry'),
-                          ),
+                          const SizedBox(height: 20),
+                          _buildStatsRow(context, profile),
+                          const SizedBox(height: 32),
+                          _buildAboutSection(context, profile),
+                          const SizedBox(height: 32),
+                          _buildWorksSection(context),
+                          const SizedBox(height: 40),
                         ],
                       ),
-                    )
-                  : CustomScrollView(
-                      slivers: [
-                        _buildSliverAppBar(context, profile),
-                        SliverToBoxAdapter(
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 20),
-                              _buildStatsRow(context, profile),
-                              const SizedBox(height: 32),
-                              _buildAboutSection(context, profile),
-                              const SizedBox(height: 32),
-                              _buildWorksSection(context),
-                              const SizedBox(height: 40),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
+                  ],
+                ),
         );
       },
     );
@@ -154,7 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         radius: 60,
                         backgroundColor: Colors.grey[200],
                         backgroundImage: NetworkImage(
-                          profile.profilePic ?? 'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff'
+                          profile.profilePic ??
+                              'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff',
                         ),
                       ),
                     ),
@@ -162,7 +171,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       right: 4,
                       bottom: 4,
                       child: GestureDetector(
-                        onTap: () => _showEditProfileBottomSheet(context, profile),
+                        onTap: () =>
+                            _showEditProfileBottomSheet(context, profile),
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -174,10 +184,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: Colors.black.withOpacity(0.2),
                                 blurRadius: 10,
                                 spreadRadius: 2,
-                              )
+                              ),
                             ],
                           ),
-                          child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -204,7 +218,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.verified_user, size: 14, color: Colors.blue[300]),
+                    Icon(
+                      Icons.verified_user,
+                      size: 14,
+                      color: Colors.blue[300],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '@${profile.username}',
@@ -235,14 +253,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem(context, profile.repoCount, 'Projects')),
+          Expanded(
+            child: _buildStatItem(context, profile.repoCount, 'Projects'),
+          ),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, profile.followerCount, 'Followers')),
+          Expanded(
+            child: _buildStatItem(context, profile.followerCount, 'Followers'),
+          ),
           _buildVerticalDivider(),
           Expanded(child: _buildStatItem(context, '0', 'Stars')),
           _buildVerticalDivider(),
@@ -253,11 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildVerticalDivider() {
-    return Container(
-      height: 30,
-      width: 1,
-      color: Colors.grey.withOpacity(0.2),
-    );
+    return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.2));
   }
 
   Widget _buildStatItem(BuildContext context, String value, String label) {
@@ -265,10 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -319,12 +334,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
             child: Text(
-              profile.bio.isEmpty ? 'Sharing my creative journey and technical projects.' : profile.bio,
+              profile.bio.isEmpty
+                  ? 'Sharing my creative journey and technical projects.'
+                  : profile.bio,
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: 15,
                 height: 1.5,
               ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Saved Projects Tile
+          ListTile(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SavedProjectsScreen(),
+                ),
+              );
+            },
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.bookmark_rounded,
+                color: Colors.amber,
+                size: 24,
+              ),
+            ),
+            title: const Text(
+              'Saved Projects',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Text(
+              'Reference projects you\'ve saved from others',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.grey.withOpacity(0.1)),
             ),
           ),
         ],
@@ -334,35 +389,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildWorksSection(BuildContext context) {
     return ListenableBuilder(
-      listenable: ProjectService(),
+      listenable: Listenable.merge([ProjectService(), ProfileService()]),
       builder: (context, child) {
-        final myWorks = ProjectService().savedProjects;
+        final pinnedWorks = ProjectService().pinnedProjects;
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Pinned Projects',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SavedProjectsScreen()),
-                      );
-                    },
-                    child: const Text('View All'),
-                  ),
-                ],
+              const Text(
+                'Pinned Projects',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              if (myWorks.isEmpty)
+              if (pinnedWorks.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(40),
                   width: double.infinity,
@@ -373,16 +414,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Column(
                     children: [
-                      Icon(Icons.star_outline, size: 48, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No pinned projects',
-                        style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+                      Icon(
+                        Icons.push_pin_outlined,
+                        size: 48,
+                        color: Colors.grey[400],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Highlight your best work here.',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No pinned projects',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -392,9 +435,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shrinkWrap: true,
                   padding: EdgeInsets.zero,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: myWorks.length > 3 ? 3 : myWorks.length,
+                  itemCount: pinnedWorks.length,
                   itemBuilder: (context, index) {
-                    final project = myWorks[index];
+                    final project = pinnedWorks[index];
                     return _buildProjectItem(context, project);
                   },
                 ),
@@ -416,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: ListTile(
@@ -448,9 +491,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProjectDetailsScreen(
-                project: project,
-              ),
+              builder: (context) => ProjectDetailsScreen(project: project),
             ),
           );
         },
@@ -460,7 +501,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditProfileBottomSheet(BuildContext context, Profile profile) {
     final nameController = TextEditingController(text: profile.fullName);
-    final professionController = TextEditingController(text: profile.profession);
+    final professionController = TextEditingController(
+      text: profile.profession,
+    );
     final bioController = TextEditingController(text: profile.bio);
     final phoneController = TextEditingController(text: profile.phone);
     XFile? selectedImage;
@@ -476,7 +519,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: MediaQuery.of(context).size.height * 0.85,
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -498,7 +543,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       const Text(
                         'Edit Profile',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
@@ -521,20 +569,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 radius: 55,
                                 backgroundColor: Colors.blue.withOpacity(0.1),
                                 backgroundImage: selectedImage != null
-                                    ? (kIsWeb 
-                                        ? NetworkImage(selectedImage!.path) 
-                                        : FileImage(File(selectedImage!.path))) as ImageProvider
-                                    : NetworkImage(profile.profilePic ?? 'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff'),
+                                    ? (kIsWeb
+                                              ? NetworkImage(
+                                                  selectedImage!.path,
+                                                )
+                                              : FileImage(
+                                                  File(selectedImage!.path),
+                                                ))
+                                          as ImageProvider
+                                    : NetworkImage(
+                                        profile.profilePic ??
+                                            'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff',
+                                      ),
                               ),
                               Positioned(
                                 right: 0,
                                 bottom: 0,
                                 child: GestureDetector(
                                   onTap: () async {
-                                    final XFile? image = await _imagePicker.pickImage(
-                                      source: ImageSource.gallery,
-                                      imageQuality: 80,
-                                    );
+                                    final XFile? image = await _imagePicker
+                                        .pickImage(
+                                          source: ImageSource.gallery,
+                                          imageQuality: 80,
+                                        );
                                     if (image != null) {
                                       setModalState(() {
                                         selectedImage = image;
@@ -546,9 +603,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.blue,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
                                     ),
-                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -556,68 +620,115 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        
-                        _buildStyledTextField('Full Name', Icons.person_outline, nameController),
+
+                        _buildStyledTextField(
+                          'Full Name',
+                          Icons.person_outline,
+                          nameController,
+                        ),
                         const SizedBox(height: 20),
-                        _buildStyledTextField('Profession', Icons.work_outline, professionController),
+                        _buildStyledTextField(
+                          'Profession',
+                          Icons.work_outline,
+                          professionController,
+                        ),
                         const SizedBox(height: 20),
-                        _buildStyledTextField('Phone', Icons.phone_outlined, phoneController),
+                        _buildStyledTextField(
+                          'Phone',
+                          Icons.phone_outlined,
+                          phoneController,
+                        ),
                         const SizedBox(height: 20),
-                        _buildStyledTextField('Bio', Icons.info_outline, bioController, maxLines: 4),
-                        
+                        _buildStyledTextField(
+                          'Bio',
+                          Icons.info_outline,
+                          bioController,
+                          maxLines: 4,
+                        ),
+
                         const SizedBox(height: 40),
-                        
+
                         SizedBox(
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: isSaving ? null : () async {
-                              setModalState(() => isSaving = true);
-                              
-                              http.MultipartFile? profilePicFile;
-                              if (selectedImage != null) {
-                                if (kIsWeb) {
-                                  final bytes = await selectedImage!.readAsBytes();
-                                  profilePicFile = http.MultipartFile.fromBytes(
-                                    'profile_pic',
-                                    bytes,
-                                    filename: selectedImage!.name,
-                                  );
-                                } else {
-                                  profilePicFile = await http.MultipartFile.fromPath(
-                                    'profile_pic',
-                                    selectedImage!.path,
-                                  );
-                                }
-                              }
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    setModalState(() => isSaving = true);
 
-                              final success = await _profileService.updateProfile({
-                                'full_name': nameController.text,
-                                'profession': professionController.text,
-                                'bio': bioController.text,
-                                'phone': phoneController.text,
-                              }, profilePic: profilePicFile);
+                                    http.MultipartFile? profilePicFile;
+                                    if (selectedImage != null) {
+                                      if (kIsWeb) {
+                                        final bytes = await selectedImage!
+                                            .readAsBytes();
+                                        profilePicFile =
+                                            http.MultipartFile.fromBytes(
+                                              'profile_pic',
+                                              bytes,
+                                              filename: selectedImage!.name,
+                                            );
+                                      } else {
+                                        profilePicFile =
+                                            await http.MultipartFile.fromPath(
+                                              'profile_pic',
+                                              selectedImage!.path,
+                                            );
+                                      }
+                                    }
 
-                              if (mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(success ? 'Profile updated successfully' : 'Failed to update profile'),
-                                    backgroundColor: success ? Colors.green : Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
+                                    final success = await _profileService
+                                        .updateProfile({
+                                          'full_name': nameController.text,
+                                          'profession':
+                                              professionController.text,
+                                          'bio': bioController.text,
+                                          'phone': phoneController.text,
+                                        }, profilePic: profilePicFile);
+
+                                    if (mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            success
+                                                ? 'Profile updated successfully'
+                                                : 'Failed to update profile',
+                                          ),
+                                          backgroundColor: success
+                                              ? Colors.green
+                                              : Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
                               elevation: 0,
                             ),
-                            child: isSaving 
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: isSaving
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Save Changes',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -633,7 +744,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStyledTextField(String label, IconData icon, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildStyledTextField(
+    String label,
+    IconData icon,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -667,7 +783,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderRadius: BorderRadius.circular(15),
               borderSide: const BorderSide(color: Colors.blue, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
       ],

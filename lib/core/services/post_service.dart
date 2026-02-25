@@ -68,22 +68,38 @@ class PostService extends ChangeNotifier {
   }
 
   Future<void> likePost(int id) async {
+    final index = _posts.indexWhere((p) => p.id == id);
+    if (index == -1) return;
+
+    final originalPost = _posts[index];
+    final bool wasLiked = originalPost.isLiked;
+
+    // Optimistic Update
+    _posts[index] = originalPost.copyWith(
+      isLiked: !wasLiked,
+      likeCount: wasLiked
+          ? originalPost.likeCount - 1
+          : originalPost.likeCount + 1,
+    );
+    notifyListeners();
+
     try {
       final response = await _apiService.post('/posts/$id/like/', {});
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
-        final index = _posts.indexWhere((p) => p.id == id);
-        if (index != -1) {
-          if (body is Map && body.containsKey('id')) {
-            _posts[index] = Post.fromJson(body as Map<String, dynamic>);
-          } else {
-            fetchPosts();
-          }
-          notifyListeners();
+        if (body is Map && body.containsKey('id')) {
+          _posts[index] = Post.fromJson(body as Map<String, dynamic>);
         }
+        // If body doesn't have ID, we keep our optimistic state which is likely correct
+      } else {
+        // Rollback on failure
+        _posts[index] = originalPost;
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('Error liking post: $e');
+      _posts[index] = originalPost;
+      notifyListeners();
     }
   }
 
@@ -128,7 +144,7 @@ class PostService extends ChangeNotifier {
   Future<Comment?> addComment(int postId, String content) async {
     try {
       final response = await _apiService.post('/posts/$postId/comment/', {
-        'content': content,
+        'comment_text': content,
         'post': postId,
       });
 
