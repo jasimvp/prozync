@@ -18,8 +18,6 @@ class ProjectService extends ChangeNotifier {
 
   List<Project> get projects => _projects;
   List<Project> get myRepos => _myRepos;
-  List<Project> get savedProjects =>
-      _projects.where((p) => p.isPinned).toList();
   List<Invitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
 
@@ -104,22 +102,49 @@ class ProjectService extends ChangeNotifier {
     return false;
   }
 
+  Project getProjectById(int id, Project fallback) {
+    return [
+      ..._projects,
+      ..._myRepos,
+    ].firstWhere((p) => p.id == id, orElse: () => fallback);
+  }
+
+  List<Project> get savedProjects {
+    final all = [..._projects, ..._myRepos];
+    final seen = <int>{};
+    return all.where((p) {
+      if (seen.contains(p.id)) return false;
+      seen.add(p.id);
+      return p.isPinned;
+    }).toList();
+  }
+
   Future<bool> togglePin(int projectId) async {
     try {
       final response = await _apiService.post('/projects/$projectId/pin/', {});
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final updatedProject = Project.fromJson(jsonDecode(response.body));
+        bool updated = false;
+
         final index = _projects.indexWhere((p) => p.id == projectId);
         if (index != -1) {
-          final updatedProject = Project.fromJson(jsonDecode(response.body));
           _projects[index] = updatedProject;
+          updated = true;
+        }
 
-          // Also update in myRepos if present
-          final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
-          if (myRepoIndex != -1) {
-            _myRepos[myRepoIndex] = updatedProject;
-          }
+        final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+        if (myRepoIndex != -1) {
+          _myRepos[myRepoIndex] = updatedProject;
+          updated = true;
+        }
 
+        if (updated) {
           notifyListeners();
+          return true;
+        } else {
+          // If not in lists, maybe we should refresh or just return success
+          fetchProjects();
+          fetchMyRepos();
           return true;
         }
       }
@@ -167,6 +192,31 @@ class ProjectService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error responding to invitation: $e');
+    }
+    return false;
+  }
+
+  Future<bool> likeProject(int projectId) async {
+    try {
+      final response = await _apiService.post('/projects/$projectId/like/', {});
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final index = _projects.indexWhere((p) => p.id == projectId);
+        if (index != -1) {
+          final updatedProject = Project.fromJson(body);
+          _projects[index] = updatedProject;
+
+          final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+          if (myRepoIndex != -1) {
+            _myRepos[myRepoIndex] = updatedProject;
+          }
+
+          notifyListeners();
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error liking project: $e');
     }
     return false;
   }

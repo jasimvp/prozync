@@ -233,89 +233,112 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         ],
                       ),
                     ),
-                    if (isOwner)
-                      PopupMenuButton<String>(
-                        icon: Icon(Icons.more_horiz, color: Colors.grey[400]),
-                        onSelected: (value) async {
-                          if (value == 'delete') {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Project'),
-                                content: const Text(
-                                  'Are you sure you want to delete this project?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red,
-                                    ),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListenableBuilder(
+                          listenable: _projectService,
+                          builder: (context, _) {
+                            final currentProject = _projectService.projects
+                                .firstWhere(
+                                  (p) => p.id == project.id,
+                                  orElse: () => project,
+                                );
+                            return IconButton(
+                              icon: Icon(
+                                currentProject.isPinned
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: currentProject.isPinned
+                                    ? Colors.amber
+                                    : Colors.grey[400],
                               ),
+                              onPressed: () async {
+                                final success = await _projectService.togglePin(
+                                  project.id,
+                                );
+                                if (!success && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Failed to update pin status',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             );
-
-                            if (confirm == true) {
-                              await _projectService.deleteProject(project.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Project deleted'),
+                          },
+                        ),
+                        if (isOwner)
+                          PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_horiz,
+                              color: Colors.grey[400],
+                            ),
+                            onSelected: (value) async {
+                              if (value == 'delete') {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete Project'),
+                                    content: const Text(
+                                      'Are you sure you want to delete this project?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
                                   ),
                                 );
+
+                                if (confirm == true) {
+                                  await _projectService.deleteProject(
+                                    project.id,
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Project deleted'),
+                                      ),
+                                    );
+                                  }
+                                }
                               }
-                            }
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                  size: 20,
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Delete',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      IconButton(
-                        icon: Icon(
-                          project.isPinned ? Icons.star : Icons.star_border,
-                          color: project.isPinned
-                              ? Colors.amber
-                              : Colors.grey[400],
-                        ),
-                        onPressed: () async {
-                          final success = await _projectService.togglePin(
-                            project.id,
-                          );
-                          if (!success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to update pin status'),
                               ),
-                            );
-                          }
-                        },
-                      ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -409,9 +432,52 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      'Updated recently',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                    ListenableBuilder(
+                      listenable: _projectService,
+                      builder: (context, _) {
+                        final currentProject = _projectService.getProjectById(
+                          project.id,
+                          project,
+                        );
+                        return Row(
+                          children: [
+                            InkWell(
+                              onTap: () =>
+                                  _projectService.likeProject(project.id),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    currentProject.isLiked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    size: 16,
+                                    color: currentProject.isLiked
+                                        ? Colors.red
+                                        : Colors.grey[400],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    currentProject.likeCount.toString(),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              'Updated recently',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

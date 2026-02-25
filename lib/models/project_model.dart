@@ -16,6 +16,8 @@ class Project {
   final List<dynamic> collaborators;
   final DateTime createdAt;
   bool isPinned;
+  final int likeCount;
+  bool isLiked;
 
   Project({
     required this.id,
@@ -33,6 +35,8 @@ class Project {
     this.collaborators = const [],
     required this.createdAt,
     this.isPinned = false,
+    this.likeCount = 0,
+    this.isLiked = false,
   });
 
   // UI Compatibility Getters
@@ -70,6 +74,8 @@ class Project {
       collaborators: json['collaborators'] ?? [],
       createdAt: DateTime.parse(json['created_at']),
       isPinned: json['is_pinned'] ?? false,
+      likeCount: json['like_count'] ?? 0,
+      isLiked: json['is_liked'] ?? false,
     );
   }
 

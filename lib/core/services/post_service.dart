@@ -95,18 +95,8 @@ class PostService extends ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final index = _posts.indexWhere((p) => p.id == id);
         if (index != -1) {
-          final post = _posts[index];
-          _posts[index] = Post(
-            id: post.id,
-            user: post.user,
-            username: post.username,
-            project: post.project,
-            image: post.image,
-            content: post.content,
-            likeCount: post.likeCount,
-            commentCount: post.commentCount,
-            isSaved: !post.isSaved, // Toggle local state
-            createdAt: post.createdAt,
+          _posts[index] = _posts[index].copyWith(
+            isSaved: !_posts[index].isSaved,
           );
           notifyListeners();
         }
@@ -139,6 +129,7 @@ class PostService extends ChangeNotifier {
     try {
       final response = await _apiService.post('/posts/$postId/comment/', {
         'content': content,
+        'post': postId,
       });
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -146,18 +137,8 @@ class PostService extends ChangeNotifier {
         // Update local post comment count if possible
         final index = _posts.indexWhere((p) => p.id == postId);
         if (index != -1) {
-          final post = _posts[index];
-          _posts[index] = Post(
-            id: post.id,
-            user: post.user,
-            username: post.username,
-            project: post.project,
-            image: post.image,
-            content: post.content,
-            likeCount: post.likeCount,
-            commentCount: post.commentCount + 1, // Increment comment count
-            isSaved: post.isSaved,
-            createdAt: post.createdAt,
+          _posts[index] = _posts[index].copyWith(
+            commentCount: _posts[index].commentCount + 1,
           );
         }
         notifyListeners();

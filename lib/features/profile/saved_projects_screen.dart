@@ -9,8 +9,6 @@ class SavedProjectsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final savedProjects = ProjectService().savedProjects;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -19,12 +17,20 @@ class SavedProjectsScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: savedProjects.isEmpty
-          ? Center(
+      body: ListenableBuilder(
+        listenable: ProjectService(),
+        builder: (context, _) {
+          final savedProjects = ProjectService().savedProjects;
+          if (savedProjects.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.bookmark_border, size: 80, color: Colors.grey[300]),
+                  Icon(
+                    Icons.bookmark_border,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No saved projects yet',
@@ -41,15 +47,18 @@ class SavedProjectsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            )
-          : ListView.builder(
-              itemCount: savedProjects.length,
-              padding: const EdgeInsets.all(20),
-              itemBuilder: (context, index) {
-                final project = savedProjects[index];
-                return _buildSavedProjectCard(context, project);
-              },
-            ),
+            );
+          }
+          return ListView.builder(
+            itemCount: savedProjects.length,
+            padding: const EdgeInsets.all(20),
+            itemBuilder: (context, index) {
+              final project = savedProjects[index];
+              return _buildSavedProjectCard(context, project);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -64,7 +73,7 @@ class SavedProjectsScreen extends StatelessWidget {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Material(
@@ -75,9 +84,7 @@ class SavedProjectsScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProjectDetailsScreen(
-                  project: project,
-                ),
+                builder: (context) => ProjectDetailsScreen(project: project),
               ),
             );
           },
@@ -95,7 +102,10 @@ class SavedProjectsScreen extends StatelessWidget {
                         color: AppTheme.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(Icons.code_rounded, color: AppTheme.primaryColor),
+                      child: const Icon(
+                        Icons.code_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -143,7 +153,9 @@ class SavedProjectsScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 12,
-                      backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${project.ownerName}&background=random'),
+                      backgroundImage: NetworkImage(
+                        'https://ui-avatars.com/api/?name=${project.ownerName}&background=random',
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -156,14 +168,21 @@ class SavedProjectsScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.people_outline, size: 14, color: Colors.grey),
+                          const Icon(
+                            Icons.people_outline,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             project.collaboratorCount,
@@ -172,6 +191,41 @@ class SavedProjectsScreen extends StatelessWidget {
                               color: Colors.grey,
                               fontWeight: FontWeight.bold,
                             ),
+                          ),
+                          const SizedBox(width: 12),
+                          ListenableBuilder(
+                            listenable: ProjectService(),
+                            builder: (context, _) {
+                              final currentProject = ProjectService()
+                                  .getProjectById(project.id, project);
+                              return InkWell(
+                                onTap: () => ProjectService().likeProject(
+                                  currentProject.id,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      currentProject.isLiked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 14,
+                                      color: currentProject.isLiked
+                                          ? Colors.red
+                                          : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      currentProject.likeCount.toString(),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

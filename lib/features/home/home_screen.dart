@@ -651,7 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLikeButton(Post post) {
-    final bool isLiked = false; // Add to model if needed
+    final bool isLiked = post.isLiked;
     return InkWell(
       onTap: () => _postService.likePost(post.id),
       child: Row(

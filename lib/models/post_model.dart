@@ -10,6 +10,7 @@ class Post {
   final int likeCount;
   final int commentCount;
   final bool isSaved;
+  final bool isLiked;
   final DateTime createdAt;
 
   Post({
@@ -22,6 +23,7 @@ class Post {
     required this.likeCount,
     required this.commentCount,
     this.isSaved = false,
+    this.isLiked = false,
     required this.createdAt,
   });
 
@@ -31,6 +33,34 @@ class Post {
     String path = image!;
     if (path.startsWith('/')) path = path.substring(1);
     return '${AppConstants.baseUrl}/$path';
+  }
+
+  Post copyWith({
+    int? id,
+    int? user,
+    String? username,
+    int? project,
+    String? image,
+    String? content,
+    int? likeCount,
+    int? commentCount,
+    bool? isSaved,
+    bool? isLiked,
+    DateTime? createdAt,
+  }) {
+    return Post(
+      id: id ?? this.id,
+      user: user ?? this.user,
+      username: username ?? this.username,
+      project: project ?? this.project,
+      image: image ?? this.image,
+      content: content ?? this.content,
+      likeCount: likeCount ?? this.likeCount,
+      commentCount: commentCount ?? this.commentCount,
+      isSaved: isSaved ?? this.isSaved,
+      isLiked: isLiked ?? this.isLiked,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -44,6 +74,7 @@ class Post {
       likeCount: json['like_count'] ?? 0,
       commentCount: json['comment_count'] ?? 0,
       isSaved: json['is_saved'] ?? false,
+      isLiked: json['is_liked'] ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),

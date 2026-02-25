@@ -68,6 +68,39 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               ),
             ),
             actions: [
+              ListenableBuilder(
+                listenable: ProjectService(),
+                builder: (context, _) {
+                  final currentProject = ProjectService().projects.firstWhere(
+                    (p) => p.id == widget.project.id,
+                    orElse: () => widget.project,
+                  );
+                  final isPinned = currentProject.isPinned;
+                  return IconButton(
+                    icon: Icon(
+                      isPinned
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: isPinned ? Colors.amber : Colors.white,
+                    ),
+                    onPressed: () async {
+                      final success = await ProjectService().togglePin(
+                        widget.project.id,
+                      );
+                      if (context.mounted && success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isPinned ? 'Project unpinned' : 'Project pinned!',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.share_outlined, color: Colors.white),
                 onPressed: () {
@@ -135,6 +168,31 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         ),
                         const SizedBox(width: 12),
                         _buildBadge(widget.project.language, Colors.blue),
+                        const SizedBox(width: 12),
+                        ListenableBuilder(
+                          listenable: ProjectService(),
+                          builder: (context, _) {
+                            final currentProject = ProjectService().projects
+                                .firstWhere(
+                                  (p) => p.id == widget.project.id,
+                                  orElse: () => widget.project,
+                                );
+                            return InkWell(
+                              onTap: () => ProjectService().likeProject(
+                                widget.project.id,
+                              ),
+                              child: _buildBadge(
+                                '${currentProject.likeCount} Likes',
+                                currentProject.isLiked
+                                    ? Colors.red
+                                    : Colors.grey,
+                                icon: currentProject.isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                              ),
+                            );
+                          },
+                        ),
                         const Spacer(),
                         Text(
                           'Added ${widget.project.createdAt.day}/${widget.project.createdAt.month}/${widget.project.createdAt.year}',
@@ -434,7 +492,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     );
   }
 
-  Widget _buildBadge(String text, Color color) {
+  Widget _buildBadge(String text, Color color, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -442,13 +500,22 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
