@@ -26,6 +26,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     super.initState();
     _projectService.fetchProjects();
     _projectService.fetchMyRepos();
+    _projectService.fetchInvitations();
     ProfileService().fetchMyProfile();
   }
 
@@ -35,7 +36,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       listenable: Listenable.merge([_projectService, ProfileService()]),
       builder: (context, _) {
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Projects Explorer'),
@@ -52,6 +53,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 tabs: const [
                   Tab(text: 'My Portfolio'),
                   Tab(text: 'Collaborations'),
+                  Tab(text: 'Invitations'),
                 ],
                 indicatorColor: AppTheme.primaryColor,
                 labelColor: AppTheme.primaryColor,
@@ -82,6 +84,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             )
                             .toList(),
                       ),
+                      _buildInvitationsList(context),
                     ],
                   ),
           ),
@@ -145,6 +148,143 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             return _buildProjectCard(context, projects[index]);
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildInvitationsList(BuildContext context) {
+    final invitations = _projectService.invitations
+        .where((i) => i.status == 'PENDING')
+        .toList();
+
+    if (_projectService.isLoading && invitations.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (invitations.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.mail_outline_rounded, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              'No pending invitations',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: invitations.length,
+      itemBuilder: (context, index) {
+        final invite = invitations[index];
+        return _buildInviteItem(context, invite);
+      },
+    );
+  }
+
+  Widget _buildInviteItem(BuildContext context, dynamic invite) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.group_add_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      invite.projectName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      'from @${invite.senderName}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _projectService.respondToInvitation(
+                    invite.id,
+                    'REJECTED',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Decline'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _projectService.respondToInvitation(
+                    invite.id,
+                    'ACCEPTED',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text('Accept'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/core/services/notification_service.dart';
 import 'package:prozync/models/notification_model.dart';
+import '../projects/invitations_screen.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -41,10 +42,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     child: _notificationService.notifications.isEmpty
                         ? const Center(child: Text('No recent activity'))
                         : ListView.separated(
-                            itemCount: _notificationService.notifications.length,
-                            separatorBuilder: (context, index) => const Divider(indent: 72),
+                            itemCount:
+                                _notificationService.notifications.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(indent: 72),
                             itemBuilder: (context, index) {
-                              return _buildActivityTile(_notificationService.notifications[index]);
+                              return _buildActivityTile(
+                                _notificationService.notifications[index],
+                              );
                             },
                           ),
                   ),
@@ -85,7 +90,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
       leading: Stack(
         children: [
           CircleAvatar(
-            backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${notification.senderName}&background=random'),
+            backgroundImage: NetworkImage(
+              'https://ui-avatars.com/api/?name=${notification.senderName}&background=random',
+            ),
           ),
           Positioned(
             right: 0,
@@ -109,18 +116,36 @@ class _ActivityScreenState extends State<ActivityScreen> {
             fontSize: 14,
           ),
           children: [
-            TextSpan(text: '${notification.senderName} ', style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: notification.message, style: const TextStyle(color: Colors.grey)),
+            TextSpan(
+              text: '${notification.senderName} ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: notification.message,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       ),
-      subtitle: Text(_timeAgo(notification.createdAt), style: const TextStyle(fontSize: 12)),
+      subtitle: Text(
+        _timeAgo(notification.createdAt),
+        style: const TextStyle(fontSize: 12),
+      ),
       trailing: notification.status == 'PENDING'
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (notification.project != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const InvitationsScreen(),
+                        ),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
