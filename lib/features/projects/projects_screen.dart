@@ -62,7 +62,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
-            body: _projectService.isLoading
+            body: _projectService.isMyReposLoading
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [

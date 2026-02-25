@@ -13,10 +13,14 @@ class PostService extends ChangeNotifier {
 
   final ApiService _apiService = ApiService();
   List<Post> _posts = [];
+  List<Post> _savedPosts = [];
   bool _isLoading = false;
+  bool _isSavedLoading = false;
 
   List<Post> get posts => _posts;
+  List<Post> get savedPosts => _savedPosts;
   bool get isLoading => _isLoading;
+  bool get isSavedLoading => _isSavedLoading;
 
   Future<void> fetchPosts() async {
     _isLoading = true;
@@ -105,15 +109,20 @@ class PostService extends ChangeNotifier {
 
   Future<bool> toggleSavePost(int id) async {
     try {
-      // Try with trailing slash first, common in Django
-      final response = await _apiService.post('/posts/$id/save/', {});
+      final response = await _apiService.post('/posts/$id/save_post/', {});
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final index = _posts.indexWhere((p) => p.id == id);
         if (index != -1) {
-          _posts[index] = _posts[index].copyWith(
-            isSaved: !_posts[index].isSaved,
-          );
+          final wasSaved = _posts[index].isSaved;
+          _posts[index] = _posts[index].copyWith(isSaved: !wasSaved);
+
+          // Keep _savedPosts in sync
+          if (wasSaved) {
+            _savedPosts.removeWhere((p) => p.id == id);
+          } else {
+            _savedPosts.insert(0, _posts[index]);
+          }
           notifyListeners();
         }
         return true;
@@ -126,6 +135,33 @@ class PostService extends ChangeNotifier {
       debugPrint('Error saving post: $e');
     }
     return false;
+  }
+
+  Future<void> fetchSavedPosts() async {
+    _isSavedLoading = true;
+    Future.microtask(() => notifyListeners());
+
+    try {
+      final response = await _apiService.get('/posts/my_saved/');
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          _savedPosts = decoded.map((json) => Post.fromJson(json)).toList();
+        } else if (decoded is Map && decoded.containsKey('results')) {
+          final List<dynamic> data = decoded['results'];
+          _savedPosts = data.map((json) => Post.fromJson(json)).toList();
+        }
+      } else {
+        debugPrint(
+          'Fetch saved posts failed: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching saved posts: $e');
+    } finally {
+      _isSavedLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<List<Comment>> fetchComments(int postId) async {

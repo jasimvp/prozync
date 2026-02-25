@@ -372,7 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Text(
-              'Reference projects you\'ve saved from others',
+              'Posts you\'ve bookmarked for later',
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
             trailing: const Icon(Icons.chevron_right, color: Colors.grey),
@@ -392,6 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       listenable: Listenable.merge([ProjectService(), ProfileService()]),
       builder: (context, child) {
         final pinnedWorks = ProjectService().pinnedProjects;
+        final isLoading = ProjectService().isPinnedLoading;
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -403,7 +404,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              if (pinnedWorks.isEmpty)
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (pinnedWorks.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(40),
                   width: double.infinity,
