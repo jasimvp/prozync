@@ -9,11 +9,10 @@ class AuthService {
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
       // Trying documented /auth/login/ which is form-encoded
-      final response = await _apiService.post(
-        '/auth/login/',
-        {'username': username, 'password': password},
-        isUrlEncoded: true,
-      );
+      final response = await _apiService.post('/auth/login/', {
+        'username': username,
+        'password': password,
+      }, isUrlEncoded: true);
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(jsonDecode(response.body));
@@ -30,10 +29,10 @@ class AuthService {
 
   Future<Map<String, dynamic>> signin(String username, String password) async {
     try {
-      final response = await _apiService.post(
-        '/auth/signin/',
-        {'username': username, 'password': password},
-      );
+      final response = await _apiService.post('/auth/signin/', {
+        'username': username,
+        'password': password,
+      });
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(jsonDecode(response.body));
@@ -44,7 +43,10 @@ class AuthService {
         try {
           final errorData = jsonDecode(response.body);
           if (errorData is Map) {
-            message = errorData['detail'] ?? errorData['message'] ?? errorData.values.first.toString();
+            message =
+                errorData['detail'] ??
+                errorData['message'] ??
+                errorData.values.first.toString();
           }
         } catch (_) {}
         return {'success': false, 'message': message};
@@ -62,7 +64,7 @@ class AuthService {
         'password': data['password'],
         'full_name': data['full_name'] ?? data['username'],
       });
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true};
       } else {
@@ -71,7 +73,10 @@ class AuthService {
           if (response.body.isNotEmpty) {
             final errorData = jsonDecode(response.body);
             if (errorData is Map) {
-              errorMessage = errorData['detail'] ?? errorData['message'] ?? errorData.values.first.toString();
+              errorMessage =
+                  errorData['detail'] ??
+                  errorData['message'] ??
+                  errorData.values.first.toString();
             }
           }
         } catch (_) {
@@ -86,7 +91,9 @@ class AuthService {
 
   Future<bool> forgotPassword(String email) async {
     try {
-      final response = await _apiService.post('/auth/forgot-password/', {'email': email});
+      final response = await _apiService.post('/auth/forgot-password/', {
+        'email': email,
+      });
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Forgot Password Error: $e');
@@ -104,6 +111,26 @@ class AuthService {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Reset Password Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> changePassword({
+    required String username,
+    required String email,
+    required String password,
+    String? fullName,
+  }) async {
+    try {
+      final response = await _apiService.post('/auth/change-password/', {
+        'username': username,
+        'email': email,
+        'password': password,
+        'full_name': fullName ?? username,
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Change Password Error: $e');
       return false;
     }
   }

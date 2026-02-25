@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:prozync/main.dart';
 import 'package:prozync/features/profile/saved_projects_screen.dart';
 import 'package:prozync/core/services/auth_service.dart';
+import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/splashscreen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,9 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           _buildSectionHeader('Account'),
@@ -37,7 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const SavedProjectsScreen()),
+                  builder: (context) => const SavedProjectsScreen(),
+                ),
               );
             },
           ),
@@ -48,9 +48,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Dark Mode'),
             value: isDarkMode,
             onChanged: (value) {
-              MyApp.of(context).changeTheme(
-                value ? ThemeMode.dark : ThemeMode.light,
-              );
+              MyApp.of(
+                context,
+              ).changeTheme(value ? ThemeMode.dark : ThemeMode.light);
             },
           ),
           ListTile(
@@ -99,31 +99,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isUpdating = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'Current Password'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Change Password'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                  ),
+                ),
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'New Password'),
+                ),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm New Password',
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'New Password'),
-            ),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'Confirm New Password'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Update')),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isUpdating
+                    ? null
+                    : () async {
+                        if (newPasswordController.text !=
+                            confirmPasswordController.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Passwords do not match'),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (newPasswordController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a new password'),
+                            ),
+                          );
+                          return;
+                        }
+
+                        setDialogState(() => isUpdating = true);
+
+                        final profile = ProfileService().myProfile;
+                        if (profile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Profile not loaded')),
+                          );
+                          Navigator.pop(context);
+                          return;
+                        }
+
+                        final success = await AuthService().changePassword(
+                          username: profile.username,
+                          email: profile.email,
+                          password: newPasswordController.text,
+                          fullName: profile.fullName,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Password updated successfully!'
+                                    : 'Failed to update password',
+                              ),
+                              backgroundColor: success
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                child: isUpdating
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Update'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

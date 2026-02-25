@@ -18,7 +18,8 @@ class ProjectService extends ChangeNotifier {
 
   List<Project> get projects => _projects;
   List<Project> get myRepos => _myRepos;
-  List<Project> get savedProjects => _projects.where((p) => p.isPinned).toList();
+  List<Project> get savedProjects =>
+      _projects.where((p) => p.isPinned).toList();
   List<Invitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
 
@@ -27,7 +28,9 @@ class ProjectService extends ChangeNotifier {
     Future.microtask(() => notifyListeners());
 
     try {
-      final endpoint = search != null ? '/projects/?search=$search' : '/projects/';
+      final endpoint = search != null
+          ? '/projects/?search=$search'
+          : '/projects/';
       final response = await _apiService.get(endpoint);
 
       if (response.statusCode == 200) {
@@ -61,9 +64,16 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Future<Project?> createProject(Map<String, String> data, {List<http.MultipartFile>? files}) async {
+  Future<Project?> createProject(
+    Map<String, String> data, {
+    List<http.MultipartFile>? files,
+  }) async {
     try {
-      final response = await _apiService.postMultipart('/projects/', data, files: files);
+      final response = await _apiService.postMultipart(
+        '/projects/',
+        data,
+        files: files,
+      );
       if (response.statusCode == 201) {
         final project = Project.fromJson(jsonDecode(response.body));
         _projects.insert(0, project);
@@ -94,12 +104,29 @@ class ProjectService extends ChangeNotifier {
     return false;
   }
 
-  void togglePin(int projectId) {
-    final index = _projects.indexWhere((p) => p.id == projectId);
-    if (index != -1) {
-      _projects[index].isPinned = !_projects[index].isPinned;
-      notifyListeners();
+  Future<bool> togglePin(int projectId) async {
+    try {
+      final response = await _apiService.post('/projects/$projectId/pin/', {});
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final index = _projects.indexWhere((p) => p.id == projectId);
+        if (index != -1) {
+          final updatedProject = Project.fromJson(jsonDecode(response.body));
+          _projects[index] = updatedProject;
+
+          // Also update in myRepos if present
+          final myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+          if (myRepoIndex != -1) {
+            _myRepos[myRepoIndex] = updatedProject;
+          }
+
+          notifyListeners();
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling pin: $e');
     }
+    return false;
   }
 
   Future<void> fetchInvitations() async {
@@ -120,7 +147,7 @@ class ProjectService extends ChangeNotifier {
       final response = await _apiService.post('/invitations/', {
         'project': projectId,
         'receiver': receiverId,
-        'status': 'PENDING'
+        'status': 'PENDING',
       });
       return response.statusCode == 201;
     } catch (e) {
@@ -131,7 +158,9 @@ class ProjectService extends ChangeNotifier {
 
   Future<bool> respondToInvitation(int id, String status) async {
     try {
-      final response = await _apiService.post('/invitations/$id/respond/', {'status': status});
+      final response = await _apiService.post('/invitations/$id/respond/', {
+        'status': status,
+      });
       if (response.statusCode == 200) {
         fetchInvitations();
         return true;

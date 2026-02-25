@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -527,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(post.image!),
+                  image: NetworkImage(post.fullImageUrl!),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -575,7 +576,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    final text =
+                        'Check out this post on Prozync by ${post.username}:\n'
+                        '${post.content}';
+                    Clipboard.setData(ClipboardData(text: text));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post content copied to clipboard!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.ios_share_rounded, color: Colors.grey),
                 ),
               ],

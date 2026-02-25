@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+
 class Post {
   final int id;
   final int user;
@@ -22,6 +24,14 @@ class Post {
     this.isSaved = false,
     required this.createdAt,
   });
+
+  String? get fullImageUrl {
+    if (image == null || image!.isEmpty) return null;
+    if (image!.startsWith('http')) return image!;
+    String path = image!;
+    if (path.startsWith('/')) path = path.substring(1);
+    return '${AppConstants.baseUrl}/$path';
+  }
 
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(

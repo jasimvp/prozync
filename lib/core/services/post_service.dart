@@ -137,7 +137,7 @@ class PostService extends ChangeNotifier {
 
   Future<Comment?> addComment(int postId, String content) async {
     try {
-      final response = await _apiService.post('/posts/$postId/comments/', {
+      final response = await _apiService.post('/posts/$postId/comment/', {
         'content': content,
       });
 

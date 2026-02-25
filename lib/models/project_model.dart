@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+
 class Project {
   final int id;
   final int owner;
@@ -40,6 +42,17 @@ class Project {
   DateTime get lastUpdated => createdAt;
   bool get isMyRepo => true;
 
+  String get fullCoverImage {
+    if (coverImage == null || coverImage!.isEmpty) {
+      return 'https://ui-avatars.com/api/?name=$projectName&background=random';
+    }
+    if (coverImage!.startsWith('http')) return coverImage!;
+    // Remove if there's a double slash
+    String path = coverImage!;
+    if (path.startsWith('/')) path = path.substring(1);
+    return '${AppConstants.baseUrl}/$path';
+  }
+
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
       id: json['id'],
@@ -56,6 +69,7 @@ class Project {
       collaboratorCount: json['collaborator_count'].toString(),
       collaborators: json['collaborators'] ?? [],
       createdAt: DateTime.parse(json['created_at']),
+      isPinned: json['is_pinned'] ?? false,
     );
   }
 

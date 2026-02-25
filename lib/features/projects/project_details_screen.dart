@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/core/services/project_service.dart';
@@ -9,10 +10,7 @@ import '../../models/project_model.dart';
 class ProjectDetailsScreen extends StatefulWidget {
   final Project project;
 
-  const ProjectDetailsScreen({
-    super.key,
-    required this.project,
-  });
+  const ProjectDetailsScreen({super.key, required this.project});
 
   @override
   State<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
@@ -48,14 +46,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (widget.project.coverImage != null)
-                    Image.network(
-                      widget.project.coverImage!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
-                    )
-                  else
-                    _buildPlaceholderImage(),
+                  Image.network(
+                    widget.project.fullCoverImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildPlaceholderImage(),
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -74,7 +70,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.share_outlined, color: Colors.white),
-                onPressed: () {},
+                onPressed: () {
+                  final text =
+                      'Check out this project: ${widget.project.name}\n'
+                      'Technology: ${widget.project.technology}\n'
+                      'Created by: ${widget.project.ownerName}';
+                  Clipboard.setData(ClipboardData(text: text));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Project details copied to clipboard!'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
               if (isOwner)
                 PopupMenuButton<String>(
@@ -89,14 +97,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
                           SizedBox(width: 8),
-                          Text('Delete Project', style: TextStyle(color: Colors.red)),
+                          Text(
+                            'Delete Project',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ],
                       ),
                     ),
                   ],
-                )
+                ),
             ],
           ),
 
@@ -104,7 +119,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           SliverToBoxAdapter(
             child: Center(
               child: Container(
-                constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 900 : double.infinity,
+                ),
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +138,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         const Spacer(),
                         Text(
                           'Added ${widget.project.createdAt.day}/${widget.project.createdAt.month}/${widget.project.createdAt.year}',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -132,7 +152,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       children: [
                         CircleAvatar(
                           radius: 20,
-                          backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${widget.project.ownerName}&background=random'),
+                          backgroundImage: NetworkImage(
+                            'https://ui-avatars.com/api/?name=${widget.project.ownerName}&background=random',
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -140,11 +162,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           children: [
                             Text(
                               widget.project.ownerName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             Text(
                               'Project Owner',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -152,31 +180,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         if (isOwner)
                           ElevatedButton.icon(
                             onPressed: () => _showCollabSheet(context),
-                            icon: const Icon(Icons.person_add_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.person_add_outlined,
+                              size: 18,
+                            ),
                             label: const Text('Add Collab'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                               elevation: 0,
                             ),
                           )
                         else
                           OutlinedButton(
                             onPressed: () async {
-                              await ProfileService().fetchProfiles(search: widget.project.ownerName);
-                              final profile = ProfileService().profiles.firstWhere((p) => p.id == widget.project.owner);
+                              await ProfileService().fetchProfiles(
+                                search: widget.project.ownerName,
+                              );
+                              final profile = ProfileService().profiles
+                                  .firstWhere(
+                                    (p) => p.id == widget.project.owner,
+                                  );
                               if (mounted) {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => OtherUserProfileScreen(profile: profile),
+                                    builder: (context) =>
+                                        OtherUserProfileScreen(
+                                          profile: profile,
+                                        ),
                                   ),
                                 );
                               }
                             },
                             style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             child: const Text('View Profile'),
                           ),
@@ -188,7 +231,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     if (widget.project.collaborators.isNotEmpty) ...[
                       const Text(
                         'Collaborators',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -204,11 +250,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 message: collab['username'] ?? 'Collaborator',
                                 child: CircleAvatar(
                                   radius: 20,
-                                  backgroundImage: collab['profile_pic'] != null 
-                                      ? NetworkImage(collab['profile_pic']) 
+                                  backgroundImage: collab['profile_pic'] != null
+                                      ? NetworkImage(collab['profile_pic'])
                                       : null,
-                                  child: collab['profile_pic'] == null 
-                                      ? const Icon(Icons.person, size: 20) 
+                                  child: collab['profile_pic'] == null
+                                      ? const Icon(Icons.person, size: 20)
                                       : null,
                                 ),
                               ),
@@ -222,7 +268,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     // Description
                     const Text(
                       'About this project',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -274,7 +323,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             color: Colors.black.withOpacity(0.02),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -298,15 +347,26 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             padding: const EdgeInsets.all(20),
             child: Text(
               !widget.project.isPrivate
-                  ? (widget.project.readme != null && widget.project.readme!.isNotEmpty
-                      ? widget.project.readme!
-                      : '# ${widget.project.name}\n\n'
-                          'No README content provided for this project.')
+                  ? (widget.project.readme != null &&
+                            widget.project.readme!.isNotEmpty
+                        ? widget.project.readme!
+                        : '# ${widget.project.name}\n\n'
+                              'No README content provided for this project.')
                   : 'This project is private. README content is restricted to authorized collaborators only.',
               style: TextStyle(
                 fontFamily: 'monospace',
-                color: (!widget.project.isPrivate && widget.project.readme != null && widget.project.readme!.isNotEmpty) ? Colors.black87 : Colors.grey[600],
-                fontStyle: (!widget.project.isPrivate && widget.project.readme != null && widget.project.readme!.isNotEmpty) ? FontStyle.normal : FontStyle.italic,
+                color:
+                    (!widget.project.isPrivate &&
+                        widget.project.readme != null &&
+                        widget.project.readme!.isNotEmpty)
+                    ? Colors.black87
+                    : Colors.grey[600],
+                fontStyle:
+                    (!widget.project.isPrivate &&
+                        widget.project.readme != null &&
+                        widget.project.readme!.isNotEmpty)
+                    ? FontStyle.normal
+                    : FontStyle.italic,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -324,15 +384,22 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       child: ElevatedButton.icon(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Starting download: ${widget.project.projectZip}')),
+            SnackBar(
+              content: Text('Starting download: ${widget.project.projectZip}'),
+            ),
           );
         },
         icon: const Icon(Icons.file_download_outlined),
-        label: const Text('Download Source Code (ZIP)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Download Source Code (ZIP)',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
       ),
@@ -355,7 +422,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           Expanded(
             child: Text(
               'Source code is restricted for this ${widget.project.isPrivate ? "private" : "protected"} project.',
-              style: const TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: Colors.orange,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -373,7 +444,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -383,9 +458,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Project'),
-        content: const Text('Are you sure you want to delete this project? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this project? This action cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -400,9 +480,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
       if (mounted) {
         if (success) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Project deleted')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Project deleted')));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete project')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete project')),
+          );
         }
       }
     }
@@ -416,7 +500,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return Container(
@@ -427,8 +513,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Invite Collaborator', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    const Text(
+                      'Invite Collaborator',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -439,7 +534,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey.withOpacity(0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   onChanged: (value) async {
                     if (value.length > 1) {
@@ -447,7 +545,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       await ProfileService().fetchProfiles(search: value);
                       if (mounted) {
                         setModalState(() {
-                          searchResults = ProfileService().profiles.where((p) => p.id != ProfileService().myProfile?.id).toList();
+                          searchResults = ProfileService().profiles
+                              .where(
+                                (p) => p.id != ProfileService().myProfile?.id,
+                              )
+                              .toList();
                           isSearching = false;
                         });
                       }
@@ -467,20 +569,37 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         final profile = searchResults[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: profile.profilePic != null ? NetworkImage(profile.profilePic!) : null,
-                            child: profile.profilePic == null ? const Icon(Icons.person) : null,
+                            backgroundImage: profile.profilePic != null
+                                ? NetworkImage(profile.profilePic!)
+                                : null,
+                            child: profile.profilePic == null
+                                ? const Icon(Icons.person)
+                                : null,
                           ),
-                          title: Text(profile.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(
+                            profile.fullName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           subtitle: Text(profile.profession),
                           trailing: ElevatedButton(
                             onPressed: () async {
-                              final success = await ProjectService().sendInvitation(widget.project.id, profile.id);
+                              final success = await ProjectService()
+                                  .sendInvitation(
+                                    widget.project.id,
+                                    profile.id,
+                                  );
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(success ? 'Invitation sent to ${profile.username}!' : 'Invitation failed'),
-                                    backgroundColor: success ? Colors.green : Colors.red,
+                                    content: Text(
+                                      success
+                                          ? 'Invitation sent to ${profile.username}!'
+                                          : 'Invitation failed',
+                                    ),
+                                    backgroundColor: success
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 );
                               }
@@ -488,7 +607,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             child: const Text('Invite'),
                           ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
-import 'package:prozync/models/project_model.dart'; 
+import 'package:prozync/models/project_model.dart';
 import 'package:prozync/core/services/project_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
@@ -64,11 +64,24 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
                     children: [
-                      _buildProjectList(context, projects: _projectService.myRepos),
-                      _buildProjectList(context, projects: _projectService.projects.where((p) => 
-                        p.owner != ProfileService().myProfile?.id && 
-                        p.collaborators.any((c) => (c is Map ? c['id'] : c) == ProfileService().myProfile?.id)
-                      ).toList()),
+                      _buildProjectList(
+                        context,
+                        projects: _projectService.myRepos,
+                      ),
+                      _buildProjectList(
+                        context,
+                        projects: _projectService.projects
+                            .where(
+                              (p) =>
+                                  p.owner != ProfileService().myProfile?.id &&
+                                  p.collaborators.any(
+                                    (c) =>
+                                        (c is Map ? c['id'] : c) ==
+                                        ProfileService().myProfile?.id,
+                                  ),
+                            )
+                            .toList(),
+                      ),
                     ],
                   ),
           ),
@@ -77,10 +90,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  Widget _buildProjectList(BuildContext context, {required List<Project> projects}) {
+  Widget _buildProjectList(
+    BuildContext context, {
+    required List<Project> projects,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 900;
-    
+
     if (projects.isEmpty) {
       return Center(
         child: Column(
@@ -88,14 +104,26 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           children: [
             Icon(Icons.folder_open_outlined, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text('No projects yet', style: TextStyle(color: Colors.grey[600], fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'No projects yet',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Start your journey by creating one.', style: TextStyle(color: Colors.grey[400])),
+            Text(
+              'Start your journey by creating one.',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => _projectService.fetchProjects(),
               style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Refresh Feed'),
             ),
@@ -133,7 +161,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Material(
@@ -144,9 +172,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProjectDetailsScreen(
-                  project: project,
-                ),
+                builder: (context) => ProjectDetailsScreen(project: project),
               ),
             );
           },
@@ -161,11 +187,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: (project.isPrivate ? Colors.orange : Colors.blue).withOpacity(0.1),
+                        color: (project.isPrivate ? Colors.orange : Colors.blue)
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(
-                        project.isPrivate ? Icons.lock_outline : Icons.code_rounded,
+                        project.isPrivate
+                            ? Icons.lock_outline
+                            : Icons.code_rounded,
                         color: project.isPrivate ? Colors.orange : Colors.blue,
                         size: 24,
                       ),
@@ -185,7 +214,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              _buildLanguageDot(_getLanguageColor(project.language)),
+                              _buildLanguageDot(
+                                _getLanguageColor(project.language),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 project.language,
@@ -211,12 +242,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: const Text('Delete Project'),
-                                content: const Text('Are you sure you want to delete this project?'),
+                                content: const Text(
+                                  'Are you sure you want to delete this project?',
+                                ),
                                 actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
                                     child: const Text('Delete'),
                                   ),
                                 ],
@@ -227,7 +267,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               await _projectService.deleteProject(project.id);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Project deleted')),
+                                  const SnackBar(
+                                    content: Text('Project deleted'),
+                                  ),
                                 );
                               }
                             }
@@ -238,9 +280,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             value: 'delete',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
                                 SizedBox(width: 8),
-                                Text('Delete', style: TextStyle(color: Colors.red)),
+                                Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ],
                             ),
                           ),
@@ -250,13 +299,44 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       IconButton(
                         icon: Icon(
                           project.isPinned ? Icons.star : Icons.star_border,
-                          color: project.isPinned ? Colors.amber : Colors.grey[400],
+                          color: project.isPinned
+                              ? Colors.amber
+                              : Colors.grey[400],
                         ),
-                        onPressed: () {
-                          _projectService.togglePin(project.id);
+                        onPressed: () async {
+                          final success = await _projectService.togglePin(
+                            project.id,
+                          );
+                          if (!success && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to update pin status'),
+                              ),
+                            );
+                          }
                         },
                       ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    project.fullCoverImage,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 150,
+                      width: double.infinity,
+                      color: Colors.grey[100],
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: Colors.grey[300],
+                        size: 40,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -277,25 +357,34 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (context) => const Center(child: CircularProgressIndicator()),
+                          builder: (context) =>
+                              const Center(child: CircularProgressIndicator()),
                         );
 
                         try {
-                          await ProfileService().fetchProfiles(search: project.ownerName);
+                          await ProfileService().fetchProfiles(
+                            search: project.ownerName,
+                          );
                           if (context.mounted) {
                             Navigator.pop(context);
-                            final profile = ProfileService().profiles.firstWhere((p) => p.id == project.owner);
+                            final profile = ProfileService().profiles
+                                .firstWhere((p) => p.id == project.owner);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => OtherUserProfileScreen(profile: profile),
+                                builder: (context) =>
+                                    OtherUserProfileScreen(profile: profile),
                               ),
                             );
                           }
                         } catch (e) {
                           if (context.mounted) {
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not load profile'),
+                              ),
+                            );
                           }
                         }
                       },
@@ -303,7 +392,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         children: [
                           CircleAvatar(
                             radius: 14,
-                            backgroundImage: NetworkImage('https://ui-avatars.com/api/?name=${project.ownerName}&background=random'),
+                            backgroundImage: NetworkImage(
+                              'https://ui-avatars.com/api/?name=${project.ownerName}&background=random',
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -361,11 +452,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Color _getLanguageColor(String language) {
     switch (language.toLowerCase()) {
-      case 'flutter': return Colors.blue;
-      case 'javascript': return Colors.yellow[700]!;
-      case 'python': return Colors.blue[800]!;
-      case 'react': return Colors.cyan;
-      default: return Colors.grey;
+      case 'flutter':
+        return Colors.blue;
+      case 'javascript':
+        return Colors.yellow[700]!;
+      case 'python':
+        return Colors.blue[800]!;
+      case 'react':
+        return Colors.cyan;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -391,10 +487,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         builder: (context, setModalState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -402,15 +502,27 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('New Project', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                      const Text(
+                        'New Project',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
                     ],
                   ),
                 ),
@@ -420,16 +532,40 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildBottomSheetTextField('Project Name', Icons.drive_file_rename_outline, nameController),
+                        _buildBottomSheetTextField(
+                          'Project Name',
+                          Icons.drive_file_rename_outline,
+                          nameController,
+                        ),
                         const SizedBox(height: 20),
-                        _buildBottomSheetTextField('Description', Icons.description_outlined, descController, maxLines: 3),
+                        _buildBottomSheetTextField(
+                          'Description',
+                          Icons.description_outlined,
+                          descController,
+                          maxLines: 3,
+                        ),
                         const SizedBox(height: 20),
-                        _buildBottomSheetTextField('README Content (Markdown supported)', Icons.article_outlined, readmeController, maxLines: 5),
+                        _buildBottomSheetTextField(
+                          'README Content (Markdown supported)',
+                          Icons.article_outlined,
+                          readmeController,
+                          maxLines: 5,
+                        ),
                         const SizedBox(height: 20),
-                        _buildBottomSheetTextField('Language / Technology', Icons.code_outlined, techController),
+                        _buildBottomSheetTextField(
+                          'Language / Technology',
+                          Icons.code_outlined,
+                          techController,
+                        ),
                         const SizedBox(height: 20),
                         SwitchListTile(
-                          title: const Text('Private Project', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          title: const Text(
+                            'Private Project',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                           subtitle: const Text('Only you can see this project'),
                           value: isPrivate,
                           activeColor: Colors.blue,
@@ -437,15 +573,28 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             setModalState(() => isPrivate = value);
                           },
                           contentPadding: EdgeInsets.zero,
-                          secondary: Icon(isPrivate ? Icons.lock_outline : Icons.public_outlined, color: Colors.blue),
+                          secondary: Icon(
+                            isPrivate
+                                ? Icons.lock_outline
+                                : Icons.public_outlined,
+                            color: Colors.blue,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         const SizedBox(height: 24),
-                        const Text('Cover Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text(
+                          'Cover Image',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         InkWell(
                           onTap: () async {
-                            final image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                            final image = await _imagePicker.pickImage(
+                              source: ImageSource.gallery,
+                            );
                             if (image != null) {
                               final bytes = await image.readAsBytes();
                               setModalState(() {
@@ -460,10 +609,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             decoration: BoxDecoration(
                               color: Colors.grey.withOpacity(0.05),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.1),
+                              ),
                               image: selectedCoverImageBytes != null
                                   ? DecorationImage(
-                                      image: MemoryImage(selectedCoverImageBytes!),
+                                      image: MemoryImage(
+                                        selectedCoverImageBytes!,
+                                      ),
                                       fit: BoxFit.cover,
                                     )
                                   : null,
@@ -472,16 +625,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 ? Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.blue[300]),
+                                      Icon(
+                                        Icons.add_photo_alternate_outlined,
+                                        size: 40,
+                                        color: Colors.blue[300],
+                                      ),
                                       const SizedBox(height: 8),
-                                      const Text('Pick a cover image', style: TextStyle(color: Colors.grey)),
+                                      const Text(
+                                        'Pick a cover image',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
                                     ],
                                   )
                                 : null,
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const Text('Source Code (ZIP)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text(
+                          'Source Code (ZIP)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 12),
                         InkWell(
                           onTap: () async {
@@ -505,17 +671,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             decoration: BoxDecoration(
                               color: Colors.blue.withOpacity(0.03),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.blue.withOpacity(0.2), style: BorderStyle.solid),
+                              border: Border.all(
+                                color: Colors.blue.withOpacity(0.2),
+                                style: BorderStyle.solid,
+                              ),
                             ),
                             child: Column(
                               children: [
-                                Icon(Icons.cloud_upload_outlined, size: 40, color: Colors.blue[300]),
+                                Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 40,
+                                  color: Colors.blue[300],
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  selectedFileName ?? 'Click to select project ZIP',
+                                  selectedFileName ??
+                                      'Click to select project ZIP',
                                   style: TextStyle(
-                                    color: selectedFileName != null ? Colors.blue : Colors.grey[600],
-                                    fontWeight: selectedFileName != null ? FontWeight.bold : FontWeight.normal,
+                                    color: selectedFileName != null
+                                        ? Colors.blue
+                                        : Colors.grey[600],
+                                    fontWeight: selectedFileName != null
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ],
@@ -527,69 +705,144 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: isUploading ? null : () async {
-                              if (nameController.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a project name')));
-                                return;
-                              }
-                              if (selectedFileName == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a ZIP file')));
-                                return;
-                              }
+                            onPressed: isUploading
+                                ? null
+                                : () async {
+                                    if (nameController.text.isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please enter a project name',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    if (selectedFileName == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please select a ZIP file',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                              setModalState(() => isUploading = true);
+                                    setModalState(() => isUploading = true);
 
-                              List<http.MultipartFile> files = [];
+                                    List<http.MultipartFile> files = [];
 
-                              if (kIsWeb && selectedFileBytes != null) {
-                                files.add(http.MultipartFile.fromBytes('project_zip', selectedFileBytes, filename: selectedFileName));
-                              } else if (!kIsWeb && selectedFilePath != null) {
-                                files.add(await http.MultipartFile.fromPath('project_zip', selectedFilePath!));
-                              }
+                                    if (kIsWeb && selectedFileBytes != null) {
+                                      files.add(
+                                        http.MultipartFile.fromBytes(
+                                          'project_zip',
+                                          selectedFileBytes,
+                                          filename: selectedFileName,
+                                        ),
+                                      );
+                                    } else if (!kIsWeb &&
+                                        selectedFilePath != null) {
+                                      files.add(
+                                        await http.MultipartFile.fromPath(
+                                          'project_zip',
+                                          selectedFilePath!,
+                                        ),
+                                      );
+                                    }
 
-                              if (selectedCoverImage != null) {
-                                if (kIsWeb) {
-                                  final bytes = await selectedCoverImage!.readAsBytes();
-                                  files.add(http.MultipartFile.fromBytes('cover_image', bytes, filename: selectedCoverImage!.name));
-                                } else {
-                                  files.add(await http.MultipartFile.fromPath('cover_image', selectedCoverImage!.path));
-                                }
-                              }
+                                    if (selectedCoverImage != null) {
+                                      if (kIsWeb) {
+                                        final bytes = await selectedCoverImage!
+                                            .readAsBytes();
+                                        files.add(
+                                          http.MultipartFile.fromBytes(
+                                            'cover_image',
+                                            bytes,
+                                            filename: selectedCoverImage!.name,
+                                          ),
+                                        );
+                                      } else {
+                                        files.add(
+                                          await http.MultipartFile.fromPath(
+                                            'cover_image',
+                                            selectedCoverImage!.path,
+                                          ),
+                                        );
+                                      }
+                                    }
 
-                                final success = await _projectService.createProject({
-                                  'project_name': nameController.text,
-                                  'slug': nameController.text
-                                      .toLowerCase()
-                                      .trim()
-                                      .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
-                                      .replaceAll(RegExp(r'\s+'), '-'),
-                                  'description': descController.text,
-                                  'readme': readmeController.text,
-                                  'technology': techController.text,
-                                  'is_private': isPrivate.toString(),
-                                  if (ProfileService().myProfile != null) 'owner': ProfileService().myProfile!.id.toString(),
-                                }, files: files);
+                                    final success = await _projectService
+                                        .createProject({
+                                          'project_name': nameController.text,
+                                          'slug': nameController.text
+                                              .toLowerCase()
+                                              .trim()
+                                              .replaceAll(
+                                                RegExp(r'[^a-z0-9\s-]'),
+                                                '',
+                                              )
+                                              .replaceAll(RegExp(r'\s+'), '-'),
+                                          'description': descController.text,
+                                          'readme': readmeController.text,
+                                          'technology': techController.text,
+                                          'is_private': isPrivate.toString(),
+                                          'is_pinned': 'false',
+                                          if (ProfileService().myProfile !=
+                                              null)
+                                            'owner': ProfileService()
+                                                .myProfile!
+                                                .id
+                                                .toString(),
+                                        }, files: files);
 
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(success != null ? 'Project published!' : 'Upload failed'),
-                                    backgroundColor: success != null ? Colors.green : Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            success != null
+                                                ? 'Project published!'
+                                                : 'Upload failed',
+                                          ),
+                                          backgroundColor: success != null
+                                              ? Colors.green
+                                              : Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
                               elevation: 0,
                             ),
-                            child: isUploading 
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text('Publish Project', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: isUploading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Publish Project',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -605,11 +858,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  Widget _buildBottomSheetTextField(String label, IconData icon, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildBottomSheetTextField(
+    String label,
+    IconData icon,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -619,8 +884,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             hintText: 'Enter $label',
             filled: true,
             fillColor: Colors.grey.withOpacity(0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
       ],
