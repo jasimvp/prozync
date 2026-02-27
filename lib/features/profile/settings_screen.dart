@@ -191,6 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           username: profile.username,
                           email: profile.email,
                           password: newPasswordController.text,
+                          oldPassword: currentPasswordController.text,
                           fullName: profile.fullName,
                         );
 

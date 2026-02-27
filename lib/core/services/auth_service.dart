@@ -119,6 +119,7 @@ class AuthService {
     required String username,
     required String email,
     required String password,
+    String? oldPassword,
     String? fullName,
   }) async {
     try {
@@ -126,9 +127,10 @@ class AuthService {
         'username': username,
         'email': email,
         'password': password,
+        if (oldPassword != null) 'old_password': oldPassword,
         'full_name': fullName ?? username,
       });
-      return response.statusCode == 200;
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Change Password Error: $e');
       return false;

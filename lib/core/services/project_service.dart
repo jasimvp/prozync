@@ -151,7 +151,7 @@ class ProjectService extends ChangeNotifier {
         data,
         files: files,
       );
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final project = Project.fromJson(jsonDecode(response.body));
         _projects.insert(0, project);
         _myRepos.insert(0, project);

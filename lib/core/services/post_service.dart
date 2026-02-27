@@ -59,7 +59,7 @@ class PostService extends ChangeNotifier {
         files: imageFile != null ? [imageFile] : null,
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final post = Post.fromJson(jsonDecode(response.body));
         _posts.insert(0, post);
         notifyListeners();
@@ -113,18 +113,22 @@ class PostService extends ChangeNotifier {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final index = _posts.indexWhere((p) => p.id == id);
+        final savedIndex = _savedPosts.indexWhere((p) => p.id == id);
+        
         if (index != -1) {
           final wasSaved = _posts[index].isSaved;
           _posts[index] = _posts[index].copyWith(isSaved: !wasSaved);
 
-          // Keep _savedPosts in sync
           if (wasSaved) {
             _savedPosts.removeWhere((p) => p.id == id);
           } else {
             _savedPosts.insert(0, _posts[index]);
           }
-          notifyListeners();
+        } else if (savedIndex != -1) {
+          _savedPosts.removeAt(savedIndex);
         }
+        
+        notifyListeners();
         return true;
       } else {
         debugPrint(

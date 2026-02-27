@@ -993,25 +993,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                     final success = await _projectService
                                         .createProject({
                                           'project_name': nameController.text,
-                                          'slug': nameController.text
-                                              .toLowerCase()
-                                              .trim()
-                                              .replaceAll(
-                                                RegExp(r'[^a-z0-9\s-]'),
-                                                '',
-                                              )
-                                              .replaceAll(RegExp(r'\s+'), '-'),
                                           'description': descController.text,
                                           'readme': readmeController.text,
                                           'technology': techController.text,
                                           'is_private': isPrivate.toString(),
-                                          'is_pinned': 'false',
-                                          if (ProfileService().myProfile !=
-                                              null)
-                                            'owner': ProfileService()
-                                                .myProfile!
-                                                .id
-                                                .toString(),
                                         }, files: files);
 
                                     if (context.mounted) {
