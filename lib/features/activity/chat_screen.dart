@@ -27,7 +27,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _chatService.fetchMessages(widget.chatId);
+    _chatService.fetchMessages(widget.chatId).then((_) {
+      _chatService.markConversationAsRead(widget.chatId);
+    });
   }
 
   void _sendMessage() async {

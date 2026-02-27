@@ -116,19 +116,15 @@ class AuthService {
   }
 
   Future<bool> changePassword({
-    required String username,
-    required String email,
-    required String password,
-    String? oldPassword,
-    String? fullName,
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
   }) async {
     try {
       final response = await _apiService.post('/auth/change-password/', {
-        'username': username,
-        'email': email,
-        'password': password,
-        if (oldPassword != null) 'old_password': oldPassword,
-        'full_name': fullName ?? username,
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
       });
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {

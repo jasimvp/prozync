@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:prozync/main.dart';
 import 'package:prozync/features/profile/saved_projects_screen.dart';
 import 'package:prozync/features/projects/invitations_screen.dart';
+import 'package:prozync/features/profile/change_password_screen.dart';
 import 'package:prozync/core/services/auth_service.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/splashscreen.dart';
@@ -27,7 +28,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.lock_outline),
             title: const Text('Change Password'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showChangePasswordDialog(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordScreen(),
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.bookmark_border),
@@ -112,117 +120,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showChangePasswordDialog(BuildContext context) {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    bool isUpdating = false;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Change Password'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Current Password',
-                  ),
-                ),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'New Password'),
-                ),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm New Password',
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: isUpdating
-                    ? null
-                    : () async {
-                        if (newPasswordController.text !=
-                            confirmPasswordController.text) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Passwords do not match'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        if (newPasswordController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter a new password'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        setDialogState(() => isUpdating = true);
-
-                        final profile = ProfileService().myProfile;
-                        if (profile == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Profile not loaded')),
-                          );
-                          Navigator.pop(context);
-                          return;
-                        }
-
-                        final success = await AuthService().changePassword(
-                          username: profile.username,
-                          email: profile.email,
-                          password: newPasswordController.text,
-                          oldPassword: currentPasswordController.text,
-                          fullName: profile.fullName,
-                        );
-
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'Password updated successfully!'
-                                    : 'Failed to update password',
-                              ),
-                              backgroundColor: success
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                child: isUpdating
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Update'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 }

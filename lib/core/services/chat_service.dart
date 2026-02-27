@@ -13,6 +13,7 @@ class ChatService extends ChangeNotifier {
   List<ChatPreview> _chats = [];
   List<Message> _currentMessages = [];
   bool _isLoading = false;
+  final Set<int> _readMessageIds = {}; // Track IDs we've marked read locally
 
   List<ChatPreview> get chats => _chats;
   List<Message> get currentMessages => _currentMessages;
@@ -23,6 +24,10 @@ class ChatService extends ChangeNotifier {
     Future.microtask(() => notifyListeners());
 
     try {
+      if (ProfileService().myProfile == null) {
+        await ProfileService().fetchMyProfile();
+      }
+      
       // Assuming GET /api/messages/ returns all messages or recent ones
       // We will group them to form the chat list
       final response = await _apiService.get('/messages/');
@@ -39,7 +44,22 @@ class ChatService extends ChangeNotifier {
           final otherId = msg.isMe ? (msg.receiverId ?? 0) : msg.senderId;
           if (otherId == 0) continue; // Skip invalid
           if (!grouped.containsKey(otherId)) grouped[otherId] = [];
-          grouped[otherId]!.add(msg);
+          
+          // Apply local read status
+          final isActuallyRead = msg.isRead || _readMessageIds.contains(msg.id);
+          final processedMsg = Message(
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            receiverId: msg.receiverId,
+            receiverName: msg.receiverName,
+            text: msg.text,
+            isRead: isActuallyRead,
+            createdAt: msg.createdAt,
+            isMe: msg.isMe,
+          );
+          
+          grouped[otherId]!.add(processedMsg);
         }
 
         _chats = grouped.entries.map((entry) {
@@ -78,6 +98,10 @@ class ChatService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      if (ProfileService().myProfile == null) {
+        await ProfileService().fetchMyProfile();
+      }
+
       // If API supports filtering: /messages/?user=ID or similar.
       // For now, we fetch all (cached/lightweight ideally) and filter.
       // Optimally: GET /messages/conversation/?user_id=X
@@ -92,11 +116,30 @@ class ChatService extends ChangeNotifier {
         _currentMessages = allMessages.where((m) {
           return (m.senderId == otherUserId && m.isMe == false) ||
               (m.isMe == true && m.receiverId == otherUserId);
+        }).map((m) {
+          // Apply local read status
+          if (_readMessageIds.contains(m.id)) {
+            return Message(
+              id: m.id,
+              senderId: m.senderId,
+              senderName: m.senderName,
+              receiverId: m.receiverId,
+              receiverName: m.receiverName,
+              text: m.text,
+              isRead: true,
+              createdAt: m.createdAt,
+              isMe: m.isMe,
+            );
+          }
+          return m;
         }).toList();
 
         _currentMessages.sort(
           (a, b) => a.createdAt.compareTo(b.createdAt),
         ); // Oldest first for chat view
+
+        // Mark as read locally and on server
+        markConversationAsRead(otherUserId);
       }
     } catch (e) {
       debugPrint('Error fetching messages: $e');
@@ -140,5 +183,61 @@ class ChatService extends ChangeNotifier {
       debugPrint('Error sending message: $e');
     }
     return false;
+  }
+
+  Future<void> markConversationAsRead(int otherUserId) async {
+    bool changed = false;
+    final List<int> toMarkOnServer = [];
+
+    // 1. Update local messages state
+    for (int i = 0; i < _currentMessages.length; i++) {
+      final msg = _currentMessages[i];
+      if (!msg.isMe && !msg.isRead && msg.senderId == otherUserId) {
+        _readMessageIds.add(msg.id);
+        _currentMessages[i] = Message(
+          id: msg.id,
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+          receiverId: msg.receiverId,
+          receiverName: msg.receiverName,
+          text: msg.text,
+          isRead: true,
+          createdAt: msg.createdAt,
+          isMe: msg.isMe,
+        );
+        toMarkOnServer.add(msg.id);
+        changed = true;
+      }
+    }
+
+    // 2. Update the chat preview in the list
+    final chatIndex = _chats.indexWhere((c) => c.id == otherUserId);
+    if (chatIndex != -1) {
+      if (_chats[chatIndex].unreadCount > 0) {
+        final chat = _chats[chatIndex];
+        _chats[chatIndex] = ChatPreview(
+          id: chat.id,
+          otherUserName: chat.otherUserName,
+          otherUserImage: chat.otherUserImage,
+          lastMessage: chat.lastMessage,
+          lastMessageTime: chat.lastMessageTime,
+          unreadCount: 0,
+        );
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      notifyListeners();
+    }
+
+    // 3. Mark on server
+    for (var id in toMarkOnServer) {
+      try {
+        await _apiService.patch('/messages/$id/', {'is_read': true});
+      } catch (e) {
+        debugPrint('Error marking message $id as read: $e');
+      }
+    }
   }
 }

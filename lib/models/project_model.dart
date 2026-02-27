@@ -19,6 +19,8 @@ class Project {
   final int likeCount;
   bool isLiked;
 
+  final bool isSaved;
+
   Project({
     required this.id,
     required this.owner,
@@ -37,6 +39,7 @@ class Project {
     this.isPinned = false,
     this.likeCount = 0,
     this.isLiked = false,
+    this.isSaved = false,
   });
 
   // UI Compatibility Getters
@@ -50,11 +53,28 @@ class Project {
     if (coverImage == null || coverImage!.isEmpty) {
       return 'https://ui-avatars.com/api/?name=$projectName&background=random';
     }
-    if (coverImage!.startsWith('http')) return coverImage!;
-    // Remove if there's a double slash
-    String path = coverImage!;
-    if (path.startsWith('/')) path = path.substring(1);
-    return '${AppConstants.baseUrl}/$path';
+    
+    String imageUrl = coverImage!;
+    
+    // Fix for backends returning localhost URLs instead of production ones
+    if (imageUrl.contains('127.0.0.1:8000') || imageUrl.contains('localhost:8000')) {
+      imageUrl = imageUrl.replaceAll(RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'), '');
+      // Ensure we don't have double slashes
+      if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
+      return '${AppConstants.baseUrl}/$imageUrl';
+    }
+    
+    // If it's already a full production URL, use it
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // Check if path starts with slash
+    if (imageUrl.startsWith('/')) {
+      imageUrl = imageUrl.substring(1);
+    }
+    
+    return '${AppConstants.baseUrl}/$imageUrl';
   }
 
   Project copyWith({
@@ -75,6 +95,7 @@ class Project {
     bool? isPinned,
     int? likeCount,
     bool? isLiked,
+    bool? isSaved,
   }) {
     return Project(
       id: id ?? this.id,
@@ -94,6 +115,7 @@ class Project {
       isPinned: isPinned ?? this.isPinned,
       likeCount: likeCount ?? this.likeCount,
       isLiked: isLiked ?? this.isLiked,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 
@@ -116,6 +138,7 @@ class Project {
       isPinned: json['is_pinned'] ?? false,
       likeCount: json['like_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,
+      isSaved: json['is_saved'] ?? false,
     );
   }
 

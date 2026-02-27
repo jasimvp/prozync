@@ -121,7 +121,7 @@ class ApiService {
       }
     }
     
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
+    final streamedResponse = await request.send().timeout(const Duration(seconds: 300));
     final response = await http.Response.fromStream(streamedResponse);
     
     print('MULTIPART Response Status: ${response.statusCode}');
