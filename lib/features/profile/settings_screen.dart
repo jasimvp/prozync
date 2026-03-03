@@ -6,6 +6,7 @@ import 'package:prozync/features/profile/change_password_screen.dart';
 import 'package:prozync/core/services/auth_service.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/splashscreen.dart';
+import 'package:prozync/features/activity/activity_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -79,7 +80,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.notifications_none_outlined),
             title: const Text('Notifications'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ActivityScreen(),
+                ),
+              );
+            },
           ),
           const Divider(),
           _buildSectionHeader('More'),

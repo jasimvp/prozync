@@ -6,6 +6,7 @@ import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/models/profile_model.dart';
 import '../../models/project_model.dart';
+import '../../core/constants.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final Project project;

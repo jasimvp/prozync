@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/features/activity/chat_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
+import 'package:prozync/features/profile/all_user_projects_screen.dart';
 import 'package:prozync/models/project_model.dart';
 import 'package:prozync/models/profile_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
@@ -344,14 +345,61 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   }
 
   Widget _buildWorksSection(BuildContext context) {
+    const int previewLimit = 3;
+    final previewProjects = userProjects.take(previewLimit).toList();
+    final hasMore = userProjects.length > previewLimit;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Recent Works',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent Works',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              if (hasMore)
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AllUserProjectsScreen(
+                          profile: widget.profile,
+                          projects: userProjects,
+                        ),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                          color: AppTheme.primaryColor.withOpacity(0.3)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View All (${userProjects.length})',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 12),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           if (isLoadingProjects)
@@ -366,9 +414,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               shrinkWrap: true,
               padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: userProjects.length,
+              itemCount: previewProjects.length,
               itemBuilder: (context, index) {
-                return _buildProjectItem(context, userProjects[index]);
+                return _buildProjectItem(context, previewProjects[index]);
               },
             ),
         ],

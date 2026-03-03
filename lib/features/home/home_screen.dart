@@ -11,6 +11,7 @@ import 'package:prozync/models/post_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/models/comment_model.dart';
+import 'package:prozync/models/profile_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
