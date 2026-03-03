@@ -283,18 +283,46 @@ class _HomeScreenState extends State<HomeScreen> {
                               tooltip: 'Add Image',
                             ),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                final text = controller.text;
+                                final selection = controller.selection;
+                                final newText = text.replaceRange(
+                                  selection.start == -1 ? text.length : selection.start,
+                                  selection.end == -1 ? text.length : selection.end,
+                                  '@',
+                                );
+                                controller.value = controller.value.copyWith(
+                                  text: newText,
+                                  selection: TextSelection.collapsed(
+                                    offset: (selection.start == -1 ? text.length : selection.start) + 1,
+                                  ),
+                                );
+                              },
                               icon: const Icon(
                                 Icons.alternate_email_rounded,
-                                color: Colors.grey,
+                                color: Colors.blue,
                               ),
                               tooltip: 'Tag User',
                             ),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                final text = controller.text;
+                                final selection = controller.selection;
+                                final newText = text.replaceRange(
+                                  selection.start == -1 ? text.length : selection.start,
+                                  selection.end == -1 ? text.length : selection.end,
+                                  '#',
+                                );
+                                controller.value = controller.value.copyWith(
+                                  text: newText,
+                                  selection: TextSelection.collapsed(
+                                    offset: (selection.start == -1 ? text.length : selection.start) + 1,
+                                  ),
+                                );
+                              },
                               icon: const Icon(
                                 Icons.tag_rounded,
-                                color: Colors.grey,
+                                color: Colors.blue,
                               ),
                               tooltip: 'Hashtag',
                             ),

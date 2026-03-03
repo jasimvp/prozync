@@ -335,7 +335,7 @@ class ProjectService extends ChangeNotifier {
       final response = await _apiService.post('/invitations/$id/respond/', {
         'status': status,
       });
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         fetchInvitations();
         return true;
       }

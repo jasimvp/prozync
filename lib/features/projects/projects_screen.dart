@@ -258,10 +258,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => _projectService.respondToInvitation(
-                    invite.id,
-                    'REJECTED',
-                  ),
+                  onPressed: () => _handleInviteResponse(invite.id, 'REJECTED'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -275,10 +272,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _projectService.respondToInvitation(
-                    invite.id,
-                    'ACCEPTED',
-                  ),
+                  onPressed: () => _handleInviteResponse(invite.id, 'ACCEPTED'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
@@ -687,4 +681,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
+  Future<void> _handleInviteResponse(int id, String status) async {
+    final success = await _projectService.respondToInvitation(id, status);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success 
+            ? 'Invitation ${status.toLowerCase()} successfully' 
+            : 'Failed to respond to invitation',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
+  }
 }
