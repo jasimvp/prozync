@@ -319,15 +319,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               padding: const EdgeInsets.only(right: 8),
                               child: Tooltip(
                                 message: collab['username'] ?? 'Collaborator',
-                                child: CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage: collab['profile_pic'] != null
-                                      ? NetworkImage(collab['profile_pic'])
-                                      : null,
-                                  child: collab['profile_pic'] == null
-                                      ? const Icon(Icons.person, size: 20)
-                                      : null,
-                                ),
+                                  child: CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: NetworkImage(
+                                      collab['profile_pic'] != null
+                                          ? (collab['profile_pic'].toString().startsWith('http')
+                                              ? collab['profile_pic']
+                                              : '${AppConstants.baseUrl}/${collab['profile_pic']}')
+                                          : 'https://ui-avatars.com/api/?name=${collab['username']}&background=random',
+                                    ),
+                                    onBackgroundImageError: (e, s) => debugPrint('Collab image error: $e'),
+                                  ),
                               ),
                             );
                           },
@@ -649,12 +651,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         final profile = searchResults[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: profile.profilePic != null
-                                ? NetworkImage(profile.profilePic!)
-                                : null,
-                            child: profile.profilePic == null
-                                ? const Icon(Icons.person)
-                                : null,
+                            backgroundImage: NetworkImage(profile.fullProfilePic),
+                            onBackgroundImageError: (e, s) => debugPrint('Search result image error: $e'),
                           ),
                           title: Text(
                             profile.fullName,

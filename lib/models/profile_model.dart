@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+
 class Profile {
   final int id;
   final int user;
@@ -26,6 +28,24 @@ class Profile {
     required this.repoCount,
     required this.connectionStatus,
   });
+
+  String get fullProfilePic {
+    if (profilePic == null || profilePic!.isEmpty) {
+      return 'https://ui-avatars.com/api/?name=${fullName.replaceAll(' ', '+')}&background=003366&color=fff';
+    }
+
+    String imageUrl = profilePic!;
+
+    if (imageUrl.contains('127.0.0.1:8000') || imageUrl.contains('localhost:8000')) {
+      imageUrl = imageUrl.replaceAll(RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'), '');
+      if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
+      return '${AppConstants.baseUrl}/$imageUrl';
+    }
+
+    if (imageUrl.startsWith('http')) return imageUrl;
+    if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
+    return '${AppConstants.baseUrl}/$imageUrl';
+  }
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(

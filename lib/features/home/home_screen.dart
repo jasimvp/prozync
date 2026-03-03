@@ -159,6 +159,10 @@ class _HomeScreenState extends State<HomeScreen> {
     dynamic selectedFileBytes;
     bool isPosting = false;
 
+    // Mention state
+    List<Profile> mentionResults = [];
+    bool showMentionList = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -166,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return Container(
-            height: MediaQuery.of(context).size.height * 0.6,
+            height: MediaQuery.of(context).size.height * 0.7,
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
@@ -216,11 +220,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           controller: controller,
                           maxLines: 5,
                           style: const TextStyle(fontSize: 16),
+                          autofocus: true,
                           decoration: InputDecoration(
                             hintText: "What's on your mind?",
                             hintStyle: TextStyle(color: Colors.grey[400]),
                             border: InputBorder.none,
                           ),
+                          onChanged: (value) async {
+                            final cursorPosition = controller.selection.baseOffset;
+                            if (cursorPosition <= 0) {
+                              setModalState(() => showMentionList = false);
+                              return;
+                            }
+
+                            final textBeforeCursor = value.substring(0, cursorPosition);
+                            final lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+                            if (lastAtIndex != -1 && !textBeforeCursor.substring(lastAtIndex).contains(' ')) {
+                              final query = textBeforeCursor.substring(lastAtIndex + 1);
+                              await ProfileService().fetchProfiles(search: query);
+                              final myId = ProfileService().myProfile?.id;
+                              setModalState(() {
+                                mentionResults = ProfileService().profiles
+                                    .where((p) => p.id != myId)
+                                    .toList();
+                                showMentionList = mentionResults.isNotEmpty;
+                              });
+                            } else {
+                              setModalState(() => showMentionList = false);
+                            }
+                          },
                         ),
                         const SizedBox(height: 20),
                         if (selectedFileName != null)
@@ -258,6 +287,61 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+                        
+                        if (showMentionList)
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: mentionResults.length,
+                              itemBuilder: (context, index) {
+                                final profile = mentionResults[index];
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    radius: 15,
+                                    backgroundImage: NetworkImage(profile.fullProfilePic),
+                                    onBackgroundImageError: (e, s) => debugPrint('Mention avatar error'),
+                                  ),
+                                  title: Text(profile.fullName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  subtitle: Text('@${profile.username}', style: const TextStyle(fontSize: 12)),
+                                  onTap: () {
+                                    final text = controller.text;
+                                    final cursorPosition = controller.selection.baseOffset;
+                                    final textBeforeCursor = text.substring(0, cursorPosition);
+                                    final lastAtIndex = textBeforeCursor.lastIndexOf('@');
+                                    
+                                    final newText = text.replaceRange(
+                                      lastAtIndex,
+                                      cursorPosition,
+                                      '@${profile.username} ',
+                                    );
+                                    
+                                    controller.value = controller.value.copyWith(
+                                      text: newText,
+                                      selection: TextSelection.collapsed(
+                                        offset: lastAtIndex + profile.username.length + 2,
+                                      ),
+                                    );
+                                    
+                                    setModalState(() => showMentionList = false);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+
                         Row(
                           children: [
                             IconButton(
@@ -283,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               tooltip: 'Add Image',
                             ),
                             IconButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 final text = controller.text;
                                 final selection = controller.selection;
                                 final newText = text.replaceRange(
@@ -297,6 +381,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     offset: (selection.start == -1 ? text.length : selection.start) + 1,
                                   ),
                                 );
+                                
+                                // Trigger user list
+                                await ProfileService().fetchProfiles(search: '');
+                                final myId = ProfileService().myProfile?.id;
+                                setModalState(() {
+                                  mentionResults = ProfileService().profiles
+                                      .where((p) => p.id != myId)
+                                      .toList();
+                                  showMentionList = mentionResults.isNotEmpty;
+                                });
                               },
                               icon: const Icon(
                                 Icons.alternate_email_rounded,
@@ -448,6 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundImage: NetworkImage(
                       'https://ui-avatars.com/api/?name=${post.username}&background=random',
                     ),
+                    onBackgroundImageError: (e, s) => debugPrint('Feed avatar error: $e'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -554,10 +649,15 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 300,
               width: double.infinity,
               margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(post.fullImageUrl!),
-                  fit: BoxFit.cover,
+              child: Image.network(
+                post.fullImageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 300,
+                  color: Colors.grey[100],
+                  child: const Center(
+                    child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 40),
+                  ),
                 ),
               ),
             )
@@ -883,9 +983,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundImage: NetworkImage(
-                                'https://ui-avatars.com/api/?name=${comment.username}&background=random',
-                              ),
+                                backgroundImage: NetworkImage(
+                                  'https://ui-avatars.com/api/?name=${comment.username}&background=random',
+                                ),
+                                onBackgroundImageError: (e, s) => debugPrint('Comment avatar error: $e'),
                             ),
                             const SizedBox(width: 12),
                             Expanded(

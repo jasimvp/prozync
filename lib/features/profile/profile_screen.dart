@@ -161,10 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[200],
-                        backgroundImage: NetworkImage(
-                          profile.profilePic ??
-                              'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff',
-                        ),
+                        backgroundImage: NetworkImage(profile.fullProfilePic),
+                        onBackgroundImageError: (exception, stackTrace) {
+                          debugPrint('Error loading profile pic: $exception');
+                        },
                       ),
                     ),
                     Positioned(
@@ -585,10 +585,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   File(selectedImage!.path),
                                                 ))
                                           as ImageProvider
-                                    : NetworkImage(
-                                        profile.profilePic ??
-                                            'https://ui-avatars.com/api/?name=${profile.fullName.replaceAll(' ', '+')}&background=003366&color=fff',
-                                      ),
+                                    : NetworkImage(profile.fullProfilePic),
+                                onBackgroundImageError: (exception, stackTrace) {
+                                  debugPrint('Error loading profile pic in edit: $exception');
+                                },
                               ),
                               Positioned(
                                 right: 0,

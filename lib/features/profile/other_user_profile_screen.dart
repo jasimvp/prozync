@@ -124,12 +124,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: widget.profile.profilePic != null
-                        ? NetworkImage(widget.profile.profilePic!)
-                        : null,
-                    child: widget.profile.profilePic == null
-                        ? Icon(Icons.person, size: 60, color: Colors.grey[400])
-                        : null,
+                    backgroundImage: NetworkImage(widget.profile.fullProfilePic),
+                    onBackgroundImageError: (exception, stackTrace) {
+                      debugPrint('Error loading other user profile pic: $exception');
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),

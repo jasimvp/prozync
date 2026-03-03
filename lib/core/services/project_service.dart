@@ -332,8 +332,9 @@ class ProjectService extends ChangeNotifier {
 
   Future<bool> respondToInvitation(int id, String status) async {
     try {
+      final action = status.toLowerCase() == 'accepted' ? 'accept' : 'reject';
       final response = await _apiService.post('/invitations/$id/respond/', {
-        'status': status,
+        'action': action,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
         fetchInvitations();
