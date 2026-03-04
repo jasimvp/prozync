@@ -240,4 +240,54 @@ class ChatService extends ChangeNotifier {
       }
     }
   }
+
+  Future<Message?> fetchMessageById(int id) async {
+    try {
+      final response = await _apiService.get('/messages/$id/');
+      if (response.statusCode == 200) {
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
+        return Message.fromJson(jsonDecode(response.body), currentUserId);
+      }
+    } catch (e) {
+      debugPrint('Error fetching message $id: $e');
+    }
+    return null;
+  }
+
+  Future<Message?> updateMessageById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/messages/$id/', data);
+      if (response.statusCode == 200) {
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
+        return Message.fromJson(jsonDecode(response.body), currentUserId);
+      }
+    } catch (e) {
+      debugPrint('Error updating message $id: $e');
+    }
+    return null;
+  }
+
+  Future<bool> deleteMessageById(int id) async {
+    try {
+      final response = await _apiService.delete('/messages/$id/');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error deleting message $id: $e');
+      return false;
+    }
+  }
+
+  Future<List<Message>> fetchConversation(int otherUserId) async {
+    try {
+      final response = await _apiService.get('/messages/conversation/?user_id=$otherUserId');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final currentUserId = ProfileService().myProfile?.user ?? 0;
+        return data.map((json) => Message.fromJson(json, currentUserId)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching conversation with $otherUserId: $e');
+    }
+    return [];
+  }
 }

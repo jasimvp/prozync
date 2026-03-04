@@ -398,4 +398,126 @@ class ProjectService extends ChangeNotifier {
     }
     return false;
   }
+
+  Future<Project?> fetchProjectById(int id) async {
+    try {
+      final response = await _apiService.get('/projects/$id/');
+      if (response.statusCode == 200) {
+        return Project.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error fetching project $id: $e');
+    }
+    return null;
+  }
+
+  Future<Project?> updateProjectById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/projects/$id/', data);
+      if (response.statusCode == 200) {
+        return Project.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error updating project $id: $e');
+    }
+    return null;
+  }
+
+  Future<Project?> partialUpdateProjectById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch('/projects/$id/', data);
+      if (response.statusCode == 200) {
+        return Project.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error partial updating project $id: $e');
+    }
+    return null;
+  }
+
+  Future<bool> saveProject(int projectId) async {
+    try {
+      final response = await _apiService.post('/projects/$projectId/save_project/', {});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error saving project $projectId: $e');
+      return false;
+    }
+  }
+
+  Future<void> fetchMySavedProjects() async {
+    _isSavedLoading = true;
+    notifyListeners();
+    try {
+      final response = await _apiService.get('/projects/my_saved/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _savedProjects = data.map((json) => Project.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching my saved projects: $e');
+    } finally {
+      _isSavedLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Invitation?> fetchInvitationById(int id) async {
+    try {
+      final response = await _apiService.get('/invitations/$id/');
+      if (response.statusCode == 200) {
+        return Invitation.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error fetching invitation $id: $e');
+    }
+    return null;
+  }
+
+  Future<Invitation?> updateInvitationById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/invitations/$id/', data);
+      if (response.statusCode == 200) {
+        return Invitation.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error updating invitation $id: $e');
+    }
+    return null;
+  }
+
+  Future<Invitation?> partialUpdateInvitationById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch('/invitations/$id/', data);
+      if (response.statusCode == 200) {
+        return Invitation.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error partial updating invitation $id: $e');
+    }
+    return null;
+  }
+
+  Future<bool> deleteInvitationById(int id) async {
+    try {
+      final response = await _apiService.delete('/invitations/$id/');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error deleting invitation $id: $e');
+      return false;
+    }
+  }
+
+  Future<bool> inviteUser(int projectId, int userId) async {
+    try {
+      final response = await _apiService.post('/invitations/invite/', {
+        'project': projectId,
+        'user': userId,
+      });
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error inviting user to project $projectId: $e');
+      return false;
+    }
+  }
 }

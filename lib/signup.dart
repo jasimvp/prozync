@@ -20,14 +20,10 @@ class _SignupscreenState extends State<Signupscreen> {
   final _authService = AuthService();
   bool _isLoading = false;
 
+  final _formKey = GlobalKey<FormState>();
+
   void _handleSignup() async {
-    if (_emailController.text.isEmpty ||
-        _usernameController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _fullNameController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -44,13 +40,7 @@ class _SignupscreenState extends State<Signupscreen> {
 
     if (result['success']) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signup successful! Please login.')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        _showOtpDialog();
       }
     } else {
       if (mounted) {
@@ -59,10 +49,65 @@ class _SignupscreenState extends State<Signupscreen> {
             content: Text(
               result['message'] ?? 'Signup failed. Please try again.',
             ),
+            backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  void _showOtpDialog() {
+    final otpController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Email Verification'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('An OTP has been sent to your email. Please enter it below to complete registration.'),
+            const SizedBox(height: 20),
+            TextField(
+              controller: otpController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: 'Enter 6-digit OTP',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (otpController.text.length == 6) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Registration successful! Please login.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter valid 6-digit OTP')),
+                );
+              }
+            },
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -84,8 +129,10 @@ class _SignupscreenState extends State<Signupscreen> {
               child: IntrinsicHeight(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Spacer(flex: 2),
                       Text(
@@ -106,81 +153,95 @@ class _SignupscreenState extends State<Signupscreen> {
                       ),
                       const Spacer(flex: 3),
                       Center(
-                        child: TextFormField(
-                          controller: _fullNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Full Name',
-                            prefixIcon: Icon(
-                              Icons.person_outline,
-                              color: Colors.blue[900],
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(
-                              Icons.email_outlined,
-                              color: Colors.blue[900],
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: TextFormField(
-                          controller: _usernameController,
-                          decoration: InputDecoration(
-                            labelText: 'username',
-                            prefixIcon: Icon(
-                              Icons.verified_user_outlined,
-                              color: Colors.blue[900],
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: TextFormField(
-                          controller: _passwordController,
-                          obscureText: _isPasswordVisible,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
+                          child: TextFormField(
+                            controller: _fullNameController,
+                            validator: (v) => v!.isEmpty ? 'Enter your full name' : null,
+                            decoration: InputDecoration(
+                              labelText: 'Full Name',
+                              prefixIcon: Icon(
+                                Icons.person_outline,
                                 color: Colors.blue[900],
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
-                            ),
-                            prefixIcon: Icon(
-                              Icons.lock_outline,
-                              color: Colors.blue[900],
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
                           ),
-                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                          child: TextFormField(
+                            controller: _emailController,
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Enter your email';
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) return 'Enter a valid email';
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                                color: Colors.blue[900],
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                          child: TextFormField(
+                            controller: _usernameController,
+                            validator: (v) => v!.isEmpty ? 'Enter a username' : null,
+                            decoration: InputDecoration(
+                              labelText: 'username',
+                              prefixIcon: Icon(
+                                Icons.verified_user_outlined,
+                                color: Colors.blue[900],
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                          child: TextFormField(
+                            controller: _passwordController,
+                            obscureText: _isPasswordVisible,
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Enter a password';
+                              if (v.length < 6) return 'Password must be at least 6 characters';
+                              if (!RegExp(r'[a-zA-Z]').hasMatch(v)) return 'Password must contain at least one letter';
+                              if (!RegExp(r'[0-9]').hasMatch(v)) return 'Password must contain at least one number';
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.blue[900],
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: Colors.blue[900],
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
                       ),
                       const Spacer(flex: 2),
                       Center(
@@ -281,6 +342,7 @@ class _SignupscreenState extends State<Signupscreen> {
                   ),
                 ),
               ),
+            ),
             ),
           );
         },

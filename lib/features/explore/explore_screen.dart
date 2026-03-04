@@ -143,8 +143,7 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               image: DecorationImage(
-                image: NetworkImage(
-                    'https://picsum.photos/seed/${project.id + 100}/800/600'),
+                image: NetworkImage(project.fullCoverImage),
                 fit: BoxFit.cover,
               ),
             ),
@@ -343,22 +342,34 @@ class _DevelopersListViewState extends State<DevelopersListView> {
                 ),
                 title: Text(profile.fullName),
                 subtitle: Text('${profile.profession} • ${profile.repoCount} repos'),
-                trailing: ElevatedButton(
-                  onPressed: () async {
-                    final success = await _profileService.followProfile(profile.id);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(success ? 'Following ${profile.fullName}' : 'Failed to follow')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(80, 32),
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: const Text('Follow', style: TextStyle(fontSize: 12)),
-                ),
+                trailing: profile.connectionStatus == 'following'
+                  ? OutlinedButton(
+                      onPressed: () {}, // Already following
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(80, 32),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        side: const BorderSide(color: Colors.grey),
+                      ),
+                      child: const Text('Following', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    )
+                  : ElevatedButton(
+                      onPressed: () async {
+                        final success = await _profileService.followProfile(profile.id);
+                        if (success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Following ${profile.fullName}')),
+                          );
+                          _profileService.fetchProfiles(search: widget.searchQuery);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(80, 32),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text('Follow', style: TextStyle(fontSize: 12)),
+                    ),
                 onTap: () {
                   Navigator.push(
                     context,

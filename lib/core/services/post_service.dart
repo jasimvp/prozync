@@ -210,6 +210,54 @@ class PostService extends ChangeNotifier {
     return null;
   }
 
+  Future<Post?> fetchPostById(int id) async {
+    try {
+      final response = await _apiService.get('/posts/$id/');
+      if (response.statusCode == 200) {
+        return Post.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error fetching post $id: $e');
+    }
+    return null;
+  }
+
+  Future<Post?> updatePost(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/posts/$id/', data);
+      if (response.statusCode == 200) {
+        final updatedPost = Post.fromJson(jsonDecode(response.body));
+        final index = _posts.indexWhere((p) => p.id == id);
+        if (index != -1) {
+          _posts[index] = updatedPost;
+          notifyListeners();
+        }
+        return updatedPost;
+      }
+    } catch (e) {
+      debugPrint('Error updating post $id: $e');
+    }
+    return null;
+  }
+
+  Future<Post?> partialUpdatePost(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch('/posts/$id/', data);
+      if (response.statusCode == 200) {
+        final updatedPost = Post.fromJson(jsonDecode(response.body));
+        final index = _posts.indexWhere((p) => p.id == id);
+        if (index != -1) {
+          _posts[index] = updatedPost;
+          notifyListeners();
+        }
+        return updatedPost;
+      }
+    } catch (e) {
+      debugPrint('Error partial updating post $id: $e');
+    }
+    return null;
+  }
+
   Future<bool> deletePost(int id) async {
     try {
       final response = await _apiService.delete('/posts/$id/');

@@ -156,4 +156,119 @@ class ProfileService extends ChangeNotifier {
     }
     return false;
   }
+
+  Future<Profile?> createProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.post('/profiles/', data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return Profile.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error creating profile: $e');
+    }
+    return null;
+  }
+
+  Future<Profile?> updateProfileById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/profiles/$id/', data);
+      if (response.statusCode == 200) {
+        return Profile.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error updating profile $id: $e');
+    }
+    return null;
+  }
+
+  Future<Profile?> partialUpdateProfileById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch('/profiles/$id/', data);
+      if (response.statusCode == 200) {
+        return Profile.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error partial updating profile $id: $e');
+    }
+    return null;
+  }
+
+  Future<bool> deleteProfileById(int id) async {
+    try {
+      final response = await _apiService.delete('/profiles/$id/');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error deleting profile $id: $e');
+      return false;
+    }
+  }
+
+  Future<bool> connectWithProfile(int id) async {
+    try {
+      final response = await _apiService.post('/profiles/$id/connect/', {});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error connecting with profile $id: $e');
+      return false;
+    }
+  }
+
+  Future<List<Profile>> fetchTaggableUsers() async {
+    try {
+      final response = await _apiService.get('/profiles/taggable_users/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Profile.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching taggable users: $e');
+    }
+    return [];
+  }
+
+  Future<ConnectionRequest?> fetchConnectionById(int id) async {
+    try {
+      final response = await _apiService.get('/connections/$id/');
+      if (response.statusCode == 200) {
+        return ConnectionRequest.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error fetching connection $id: $e');
+    }
+    return null;
+  }
+
+  Future<ConnectionRequest?> updateConnectionById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put('/connections/$id/', data);
+      if (response.statusCode == 200) {
+        return ConnectionRequest.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error updating connection $id: $e');
+    }
+    return null;
+  }
+
+  Future<ConnectionRequest?> partialUpdateConnectionById(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.patch('/connections/$id/', data);
+      if (response.statusCode == 200) {
+        return ConnectionRequest.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Error partial updating connection $id: $e');
+    }
+    return null;
+  }
+
+  Future<bool> deleteConnectionById(int id) async {
+    try {
+      final response = await _apiService.delete('/connections/$id/');
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error deleting connection $id: $e');
+      return false;
+    }
+  }
 }

@@ -12,6 +12,7 @@ import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/models/comment_model.dart';
 import 'package:prozync/models/profile_model.dart';
+import 'package:prozync/widgets/mention_text.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,10 +104,14 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.code_rounded,
-              color: AppTheme.primaryColor,
-              size: 22,
+            child: Image.asset(
+              'assets/icon/prozync.png',
+              height: 22,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.code_rounded,
+                color: AppTheme.primaryColor,
+                size: 22,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -637,11 +642,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          if (post.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                post.content,
+              child: MentionText(
+                text: post.content,
                 style: const TextStyle(fontSize: 15, height: 1.5),
               ),
             ),
@@ -1012,10 +1016,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          comment.content,
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
+                                         MentionText(
+                                           text: comment.content,
+                                           style: const TextStyle(fontSize: 14),
+                                         ),
                                       ],
                                     ),
                                   ),

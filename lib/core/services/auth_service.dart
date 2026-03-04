@@ -56,6 +56,23 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> verifySignupOtp(String email, String otp) async {
+    try {
+      final response = await _apiService.post('/auth/verify-signup-otp/', {
+        'email': email,
+        'otp': otp,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': 'Invalid OTP'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error'};
+    }
+  }
+
   Future<Map<String, dynamic>> signup(Map<String, dynamic> data) async {
     try {
       final response = await _apiService.post('/auth/signup/', {

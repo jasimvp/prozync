@@ -7,6 +7,7 @@ import 'package:prozync/models/profile_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/core/services/project_service.dart';
+import 'package:prozync/widgets/mention_text.dart';
 
 class OtherUserProfileScreen extends StatefulWidget {
   final Profile profile;
@@ -25,6 +26,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   @override
   void initState() {
     super.initState();
+    isFollowing = widget.profile.connectionStatus == 'following';
     _loadUserProjects();
   }
 
@@ -328,16 +330,16 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
-            child: Text(
-              widget.profile.bio.isNotEmpty
-                  ? widget.profile.bio
-                  : 'No bio provided.',
-              style: TextStyle(
-                color: Colors.grey[700],
-                fontSize: 15,
-                height: 1.5,
+              child: MentionText(
+                text: widget.profile.bio.isNotEmpty
+                    ? widget.profile.bio
+                    : 'No bio provided.',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 15,
+                  height: 1.5,
+                ),
               ),
-            ),
           ),
         ],
       ),
