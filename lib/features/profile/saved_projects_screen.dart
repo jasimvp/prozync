@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/core/services/post_service.dart';
+import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/models/post_model.dart';
 
@@ -144,7 +145,7 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
                   ),
                 ),
                 // Project badge
-                if (post.project != null)
+                if (post.project != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -174,6 +175,30 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () async {
+                      final success = await ProjectService().sendInterestToCollaborate(post.project!);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success 
+                              ? 'Interest sent for this project!' 
+                              : 'Failed to send interest.'),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange[800],
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Interested', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ],
                 // Unsave button
                 _UnsaveButton(post: post, postService: _postService),
               ],

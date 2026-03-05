@@ -101,16 +101,28 @@ class ProfileService extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> followProfile(int id) async {
+  Future<String?> followProfile(int id) async {
     try {
       final response = await _apiService.post('/profiles/$id/follow/', {});
       if (response.statusCode == 200) {
-        return true;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final String detail = (data['detail'] ?? '').toString();
+        
+        // Fetch updated profile to get new follower count
+        final updatedProfile = await fetchProfileById(id);
+        if (updatedProfile != null) {
+          final index = _profiles.indexWhere((p) => p.id == id);
+          if (index != -1) {
+            _profiles[index] = updatedProfile;
+            notifyListeners();
+          }
+        }
+        return detail;
       }
     } catch (e) {
       debugPrint('Error following profile: $e');
     }
-    return false;
+    return null;
   }
 
   Future<void> fetchConnections() async {

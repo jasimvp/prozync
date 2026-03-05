@@ -7,6 +7,7 @@ class NotificationModel {
   final int? post;
   final int? project;
   final String message;
+  final String? senderProfilePic;
   final bool isRead;
   final DateTime createdAt;
 
@@ -19,6 +20,7 @@ class NotificationModel {
     this.post,
     this.project,
     required this.message,
+    this.senderProfilePic,
     required this.isRead,
     required this.createdAt,
   });
@@ -33,6 +35,7 @@ class NotificationModel {
       post: json['post'],
       project: json['project'],
       message: json['message'],
+      senderProfilePic: json['sender_profile_pic'],
       isRead: json['is_read'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
     );

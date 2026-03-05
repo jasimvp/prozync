@@ -46,8 +46,14 @@ class Profile {
     if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
     return '${AppConstants.baseUrl}/$imageUrl';
   }
-
   factory Profile.fromJson(Map<String, dynamic> json) {
+    String status = (json['connection_status'] ?? '').toString().toLowerCase();
+    
+    // If status is 'followed' or backend provided is_following boolean, treat as 'following'
+    if (status == 'followed' || (status.isEmpty && json['is_following'] == true)) {
+      status = 'following';
+    }
+
     return Profile(
       id: json['id'] ?? 0,
       user: json['user'] ?? 0,
@@ -60,7 +66,37 @@ class Profile {
       profilePic: json['profile_pic'],
       followerCount: (json['follower_count'] ?? 0).toString(),
       repoCount: (json['repo_count'] ?? 0).toString(),
-      connectionStatus: json['connection_status'] ?? '',
+      connectionStatus: status,
+    );
+  }
+
+  Profile copyWith({
+    int? id,
+    int? user,
+    String? username,
+    String? email,
+    String? fullName,
+    String? phone,
+    String? bio,
+    String? profession,
+    String? profilePic,
+    String? followerCount,
+    String? repoCount,
+    String? connectionStatus,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      user: user ?? this.user,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      bio: bio ?? this.bio,
+      profession: profession ?? this.profession,
+      profilePic: profilePic ?? this.profilePic,
+      followerCount: followerCount ?? this.followerCount,
+      repoCount: repoCount ?? this.repoCount,
+      connectionStatus: connectionStatus ?? this.connectionStatus,
     );
   }
 

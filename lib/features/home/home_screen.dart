@@ -10,6 +10,7 @@ import 'package:prozync/core/services/post_service.dart';
 import 'package:prozync/models/post_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
+import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/models/comment_model.dart';
 import 'package:prozync/models/profile_model.dart';
 import 'package:prozync/widgets/mention_text.dart';
@@ -778,6 +779,31 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 14,
             color: Colors.grey,
           ),
+          if (post.project != null && ProfileService().myProfile?.id != post.user) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () async {
+                final success = await ProjectService().sendInterestToCollaborate(post.project!);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success 
+                        ? 'Interest sent for this project!' 
+                        : 'Failed to send interest.'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.orange[800],
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Interested', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
         ],
       ),
     );

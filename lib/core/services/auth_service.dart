@@ -151,15 +151,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    try {
-      final token = await _apiService.getToken();
-      if (token != null) {
-        // Attempt to notify server, but ignore errors if it fails
-        await _apiService.post('/auth/logout/', {});
-      }
-    } catch (e) {
-      debugPrint('Logout error (server side): $e');
-    }
+    // Backend doesn't have a logout endpoint currently, 
+    // so we just clear the token locally.
     await _apiService.clearToken();
   }
 

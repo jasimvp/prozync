@@ -253,29 +253,61 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProjectDetailsScreen(
-                            project: project,
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProjectDetailsScreen(
+                                project: project,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.withOpacity(0.1),
+                          foregroundColor: Colors.blue,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.withOpacity(0.1),
-                      foregroundColor: Colors.blue,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        child: const Text('View Details'),
                       ),
                     ),
-                    child: const Text('View Details'),
-                  ),
+                    if (ProfileService().myProfile?.id != project.owner) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final success = await ProjectService().sendInterestToCollaborate(project.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(success 
+                                    ? 'Interest sent to ${project.ownerName}!' 
+                                    : 'Failed to send interest.'),
+                                  backgroundColor: success ? Colors.green : Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.withOpacity(0.1),
+                            foregroundColor: Colors.orange[800],
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Interested'),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -355,10 +387,10 @@ class _DevelopersListViewState extends State<DevelopersListView> {
                     )
                   : ElevatedButton(
                       onPressed: () async {
-                        final success = await _profileService.followProfile(profile.id);
-                        if (success && context.mounted) {
+                        final result = await _profileService.followProfile(profile.id);
+                        if (result != null && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Following ${profile.fullName}')),
+                            SnackBar(content: Text(result)),
                           );
                           _profileService.fetchProfiles(search: widget.searchQuery);
                         }

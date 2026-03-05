@@ -51,6 +51,7 @@ class ProjectService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         _projects = data.map((json) => Project.fromJson(json)).toList();
+        _projects.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     } catch (e) {
       debugPrint('Error fetching projects: $e');
@@ -70,6 +71,7 @@ class ProjectService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         _myRepos = data.map((json) => Project.fromJson(json)).toList();
+        _myRepos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     } catch (e) {
       debugPrint('Error fetching my repos: $e');
@@ -88,6 +90,7 @@ class ProjectService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         _pinnedProjects = data.map((json) => Project.fromJson(json)).toList();
+        _pinnedProjects.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     } catch (e) {
       debugPrint('Error fetching pinned projects: $e');
@@ -517,6 +520,15 @@ class ProjectService extends ChangeNotifier {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('Error inviting user to project $projectId: $e');
+      return false;
+    }
+  }
+  Future<bool> sendInterestToCollaborate(int projectId) async {
+    try {
+      final response = await _apiService.post('/projects/$projectId/collaborate/', {});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Error sending interest for project $projectId: $e');
       return false;
     }
   }

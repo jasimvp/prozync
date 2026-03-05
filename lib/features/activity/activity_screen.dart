@@ -86,14 +86,24 @@ class _ActivityScreenState extends State<ActivityScreen> {
         color = Colors.blue;
     }
 
+    String? profilePicUrl = notification.senderProfilePic;
+    if (profilePicUrl != null && !profilePicUrl.startsWith('http')) {
+      if (profilePicUrl.startsWith('/')) {
+        profilePicUrl = 'https://prozync.onrender.com$profilePicUrl';
+      } else {
+        profilePicUrl = 'https://prozync.onrender.com/$profilePicUrl';
+      }
+    }
+
     return ListTile(
       onTap: () => _notificationService.markAsRead(notification.id),
       leading: Stack(
         children: [
           CircleAvatar(
             backgroundImage: NetworkImage(
-              'https://ui-avatars.com/api/?name=${notification.senderName}&background=random',
+              profilePicUrl ?? 'https://ui-avatars.com/api/?name=${notification.senderName}&background=random',
             ),
+            onBackgroundImageError: (e, s) => debugPrint('Error loading notification avatar: $e'),
           ),
           Positioned(
             right: 0,

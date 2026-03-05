@@ -17,17 +17,42 @@ class OtherUserProfileScreen extends StatefulWidget {
   @override
   State<OtherUserProfileScreen> createState() => _OtherUserProfileScreenState();
 }
-
 class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
+  late Profile _currentProfile;
   bool isFollowing = false;
   List<Project> userProjects = [];
   bool isLoadingProjects = true;
+  bool _isLoadingProfile = true;
+  bool _isActionInProgress = false;
 
   @override
   void initState() {
     super.initState();
-    isFollowing = widget.profile.connectionStatus == 'following';
+    _currentProfile = widget.profile;
+    final status = _currentProfile.connectionStatus.toLowerCase();
+    isFollowing = status == 'following' || status == 'followed';
     _loadUserProjects();
+    _fetchFullProfile();
+  }
+
+  Future<void> _fetchFullProfile({bool updateFollowStatus = true}) async {
+    try {
+      final profile = await ProfileService().fetchProfileById(_currentProfile.id);
+      if (profile != null && mounted) {
+        setState(() {
+          _currentProfile = profile;
+          
+          if (updateFollowStatus) {
+            final status = profile.connectionStatus.toLowerCase();
+            isFollowing = status == 'following' || status == 'followed';
+          }
+          
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
   }
 
   Future<void> _loadUserProjects() async {
@@ -127,7 +152,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(widget.profile.fullProfilePic),
+                    backgroundImage: NetworkImage(_currentProfile.fullProfilePic),
                     onBackgroundImageError: (exception, stackTrace) {
                       debugPrint('Error loading other user profile pic: $exception');
                     },
@@ -135,7 +160,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  widget.profile.fullName,
+                  _currentProfile.fullName,
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -143,7 +168,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   ),
                 ),
                 Text(
-                  widget.profile.profession,
+                  _currentProfile.profession,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 16,
@@ -186,14 +211,41 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () async {
-                  final success = await ProfileService().followProfile(
-                    widget.profile.id,
+                onPressed: _isActionInProgress ? null : () async {
+                  setState(() {
+                    _isActionInProgress = true;
+                  });
+
+                  // Optimistic UI update
+                  bool previouslyFollowing = isFollowing;
+                  setState(() {
+                    isFollowing = !isFollowing;
+                  });
+
+                  final result = await ProfileService().followProfile(
+                    _currentProfile.id,
                   );
-                  if (success && mounted) {
+                  
+                  if (result != null && mounted) {
+                    // result will be "Followed" or "Unfollowed"
                     setState(() {
-                      isFollowing = !isFollowing;
+                      isFollowing = result.toLowerCase() == 'followed' || result.toLowerCase() == 'following';
+                      _currentProfile = _currentProfile.copyWith(
+                        connectionStatus: isFollowing ? 'following' : '',
+                      );
+                      _isActionInProgress = false;
                     });
+                    // Refresh counts but DON'T let it overwrite our new status
+                    _fetchFullProfile(updateFollowStatus: false);
+                  } else if (mounted) {
+                    // Revert on failure
+                    setState(() {
+                      isFollowing = previouslyFollowing;
+                      _isActionInProgress = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to update follow status')),
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -223,11 +275,11 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
-                        chatId: widget.profile.user,
-                        userName: widget.profile.fullName,
+                        chatId: _currentProfile.user,
+                        userName: _currentProfile.fullName,
                         userImage:
-                            widget.profile.profilePic ??
-                            'https://ui-avatars.com/api/?name=${widget.profile.fullName}',
+                            _currentProfile.profilePic ??
+                            'https://ui-avatars.com/api/?name=${_currentProfile.fullName}',
                       ),
                     ),
                   );
@@ -270,7 +322,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           Expanded(
             child: _buildStatItem(
               context,
-              widget.profile.repoCount,
+              _currentProfile.repoCount,
               'Projects',
             ),
           ),
@@ -278,7 +330,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           Expanded(
             child: _buildStatItem(
               context,
-              widget.profile.followerCount,
+              _currentProfile.followerCount,
               'Followers',
             ),
           ),
@@ -331,8 +383,8 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
               child: MentionText(
-                text: widget.profile.bio.isNotEmpty
-                    ? widget.profile.bio
+                text: _currentProfile.bio.isNotEmpty
+                    ? _currentProfile.bio
                     : 'No bio provided.',
                 style: TextStyle(
                   color: Colors.grey[700],
@@ -370,7 +422,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AllUserProjectsScreen(
-                          profile: widget.profile,
+                          profile: _currentProfile,
                           projects: userProjects,
                         ),
                       ),
@@ -476,7 +528,35 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             style: TextStyle(color: Colors.grey[600], fontSize: 13),
           ),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (ProfileService().myProfile?.id != project.owner)
+              TextButton(
+                onPressed: () async {
+                  final success = await ProjectService().sendInterestToCollaborate(project.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success 
+                          ? 'Interest sent for ${project.name}!' 
+                          : 'Failed to send interest.'),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange[800],
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Interested', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          ],
+        ),
         onTap: () {
           Navigator.push(
             context,
