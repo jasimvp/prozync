@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:prozync/core/services/post_service.dart';
 import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/core/theme/app_theme.dart';
+import 'package:prozync/features/home/post_detail_screen.dart';
 import 'package:prozync/models/post_model.dart';
 
 class SavedProjectsScreen extends StatefulWidget {
@@ -98,7 +99,16 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
   }
 
   Widget _buildSavedPostCard(BuildContext context, Post post) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailScreen(post: post),
+          ),
+        );
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -273,7 +283,8 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
           ),
         ],
       ),
-    );
+    ),  // closes Container
+    );  // closes GestureDetector
   }
 
   String _getTimeAgo(DateTime dateTime) {

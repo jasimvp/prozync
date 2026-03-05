@@ -4,6 +4,7 @@ class Post {
   final int id;
   final int user;
   final String username;
+  final String fullName;
   final int? project;
   final String? image;
   final String content;
@@ -17,6 +18,7 @@ class Post {
     required this.id,
     required this.user,
     required this.username,
+    this.fullName = '',
     this.project,
     this.image,
     required this.content,
@@ -39,6 +41,7 @@ class Post {
     int? id,
     int? user,
     String? username,
+    String? fullName,
     int? project,
     String? image,
     String? content,
@@ -52,6 +55,7 @@ class Post {
       id: id ?? this.id,
       user: user ?? this.user,
       username: username ?? this.username,
+      fullName: fullName ?? this.fullName,
       project: project ?? this.project,
       image: image ?? this.image,
       content: content ?? this.content,
@@ -64,10 +68,16 @@ class Post {
   }
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    // Try multiple possible field names for username
+    final rawUsername = json['username'] ?? json['user_name'] ?? json['author_username'] ?? '';
+    final rawFullName = json['full_name'] ?? json['author_name'] ?? json['user_full_name'] ?? '';
+    // Display the full name if username is empty, or vice versa
+    final displayUsername = rawUsername.toString().isNotEmpty ? rawUsername.toString() : rawFullName.toString();
     return Post(
       id: json['id'] ?? 0,
-      user: json['user'] ?? 0,
-      username: json['username'] ?? 'User',
+      user: json['user'] is int ? json['user'] : (json['user']?['id'] ?? 0),
+      username: displayUsername.isNotEmpty ? displayUsername : 'Unknown',
+      fullName: rawFullName.toString(),
       project: json['project'],
       image: json['image'],
       content: json['content'] ?? '',

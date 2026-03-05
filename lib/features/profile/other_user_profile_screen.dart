@@ -57,14 +57,16 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _loadUserProjects() async {
     try {
-      // Assuming Search by username or owner ID works for fetching specific user projects
-      final allProjects = await ProjectService().fetchProjects(
+      // Fetch projects for this user using their user ID (not profile ID)
+      // project.owner is the Django User ID, which matches profile.user
+      await ProjectService().fetchProjects(
         search: widget.profile.username,
       );
       if (mounted) {
         setState(() {
+          // Compare against profile.user (User ID), not profile.id (Profile ID)
           userProjects = ProjectService().projects
-              .where((p) => p.owner == widget.profile.id)
+              .where((p) => p.owner == widget.profile.user)
               .toList();
           isLoadingProjects = false;
         });

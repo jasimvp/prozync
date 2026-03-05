@@ -708,7 +708,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             onBackgroundImageError: (e, s) => debugPrint('Search result image error: $e'),
                           ),
                           title: Text(
-                            profile.fullName,
+                            profile.fullName.isNotEmpty ? profile.fullName : profile.username,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(profile.profession),
@@ -717,7 +717,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               final success = await ProjectService()
                                   .sendInvitation(
                                     widget.project.id,
-                                    profile.id,
+                                    profile.user, // Use User ID, not Profile ID
                                   );
                               if (context.mounted) {
                                 Navigator.pop(context);
@@ -726,7 +726,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                     content: Text(
                                       success
                                           ? 'Invitation sent to ${profile.username}!'
-                                          : 'Invitation failed',
+                                          : 'Invitation failed. They may already be invited.',
                                     ),
                                     backgroundColor: success
                                         ? Colors.green

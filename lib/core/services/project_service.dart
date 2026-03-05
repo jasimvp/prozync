@@ -531,39 +531,50 @@ class ProjectService extends ChangeNotifier {
     Project? original;
     if (index != -1) original = _projects[index];
     else if (myRepoIndex != -1) original = _myRepos[myRepoIndex];
-    if (original == null) return false;
 
-    final wasInterested = original.isInterested;
+    // If project is not cached (e.g., viewing from another user's profile),
+    // still call the API directly
+    if (original != null) {
+      final wasInterested = original.isInterested;
 
-    // Optimistic update
-    final optimistic = original.copyWith(
-      isInterested: !wasInterested,
-      interestedCount: wasInterested
-          ? original.interestedCount - 1
-          : original.interestedCount + 1,
-    );
-    if (index != -1) _projects[index] = optimistic;
-    if (myRepoIndex != -1) _myRepos[myRepoIndex] = optimistic;
-    notifyListeners();
+      // Optimistic update
+      final optimistic = original.copyWith(
+        isInterested: !wasInterested,
+        interestedCount: wasInterested
+            ? original.interestedCount - 1
+            : original.interestedCount + 1,
+      );
+      if (index != -1) _projects[index] = optimistic;
+      if (myRepoIndex != -1) _myRepos[myRepoIndex] = optimistic;
+      notifyListeners();
+    }
 
     try {
       final response = await _apiService.post('/projects/$projectId/interested/', {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
-        final updated = Project.fromJson(body);
-        _updateProjectInLists(projectId, updated);
+        // Only try to parse a full project if the response has an id field
+        if (body is Map && body.containsKey('id')) {
+          final updated = Project.fromJson(body as Map<String, dynamic>);
+          _updateProjectInLists(projectId, updated);
+        }
         notifyListeners();
         return true;
       } else {
-        // Rollback
-        _updateProjectInLists(projectId, original);
-        notifyListeners();
+        // Rollback if we had an optimistic update
+        if (original != null) {
+          _updateProjectInLists(projectId, original);
+          notifyListeners();
+        }
+        debugPrint('toggleInterested failed: ${response.statusCode} ${response.body}');
         return false;
       }
     } catch (e) {
       debugPrint('Error toggling interested for project $projectId: $e');
-      _updateProjectInLists(projectId, original);
-      notifyListeners();
+      if (original != null) {
+        _updateProjectInLists(projectId, original);
+        notifyListeners();
+      }
       return false;
     }
   }

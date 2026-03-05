@@ -328,6 +328,10 @@ class DevelopersListView extends StatefulWidget {
 
 class _DevelopersListViewState extends State<DevelopersListView> {
   final _profileService = ProfileService();
+  // Track follow status locally per profile id to avoid stale re-fetch state
+  final Map<int, bool> _followingStatusMap = {};
+  // Track which profiles are currently loading a follow action
+  final Set<int> _loadingSet = {};
 
   @override
   void initState() {
@@ -344,17 +348,69 @@ class _DevelopersListViewState extends State<DevelopersListView> {
     }
   }
 
+  bool _isFollowing(int profileId, String connectionStatus) {
+    if (_followingStatusMap.containsKey(profileId)) {
+      return _followingStatusMap[profileId]!;
+    }
+    return connectionStatus == 'following' || connectionStatus == 'followed';
+  }
+
+  Future<void> _toggleFollow(int profileId) async {
+    if (_loadingSet.contains(profileId)) return;
+
+    final currentlyFollowing = _followingStatusMap.containsKey(profileId)
+        ? _followingStatusMap[profileId]!
+        : _profileService.profiles
+            .firstWhere((p) => p.id == profileId,
+                orElse: () => _profileService.profiles.first)
+            .connectionStatus == 'following';
+
+    setState(() {
+      _loadingSet.add(profileId);
+      _followingStatusMap[profileId] = !currentlyFollowing; // optimistic
+    });
+
+    final result = await _profileService.followProfile(profileId);
+
+    if (mounted) {
+      if (result != null) {
+        final nowFollowing =
+            result.toLowerCase() == 'followed' || result.toLowerCase() == 'following';
+        setState(() {
+          _followingStatusMap[profileId] = nowFollowing;
+          _loadingSet.remove(profileId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nowFollowing ? 'Following!' : 'Unfollowed'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Revert on failure
+        setState(() {
+          _followingStatusMap[profileId] = currentlyFollowing;
+          _loadingSet.remove(profileId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update follow status')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _profileService,
       builder: (context, _) {
-        if (_profileService.isLoading) {
+        if (_profileService.isLoading && _profileService.profiles.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
         final currentUserId = _profileService.myProfile?.id;
-        final profiles = _profileService.profiles.where((p) => p.id != currentUserId).toList();
+        final profiles =
+            _profileService.profiles.where((p) => p.id != currentUserId).toList();
 
         if (profiles.isEmpty) {
           return const Center(child: Text('No other developers found'));
@@ -365,43 +421,56 @@ class _DevelopersListViewState extends State<DevelopersListView> {
           itemCount: profiles.length,
           itemBuilder: (context, index) {
             final profile = profiles[index];
+            final isFollowing = _isFollowing(profile.id, profile.connectionStatus);
+            final isLoading = _loadingSet.contains(profile.id);
+
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               elevation: 0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundImage: NetworkImage(profile.profilePic ?? 'https://ui-avatars.com/api/?name=${profile.fullName}&background=random'),
+                  backgroundImage: NetworkImage(
+                    profile.fullProfilePic,
+                  ),
+                  onBackgroundImageError: (e, s) {},
                 ),
-                title: Text(profile.fullName),
+                title: Text(profile.fullName.isNotEmpty ? profile.fullName : profile.username),
                 subtitle: Text('${profile.profession} • ${profile.repoCount} repos'),
-                trailing: profile.connectionStatus == 'following'
-                  ? OutlinedButton(
-                      onPressed: () {}, // Already following
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(80, 32),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        side: const BorderSide(color: Colors.grey),
-                      ),
-                      child: const Text('Following', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    )
-                  : ElevatedButton(
-                      onPressed: () async {
-                        final result = await _profileService.followProfile(profile.id);
-                        if (result != null && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(result)),
-                          );
-                          _profileService.fetchProfiles(search: widget.searchQuery);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(80, 32),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: const Text('Follow', style: TextStyle(fontSize: 12)),
-                    ),
+                trailing: isLoading
+                    ? const SizedBox(
+                        width: 80,
+                        height: 32,
+                        child: Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    : isFollowing
+                        ? OutlinedButton(
+                            onPressed: () => _toggleFollow(profile.id),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(80, 32),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20)),
+                              side: const BorderSide(color: Colors.grey),
+                            ),
+                            child: const Text('Following',
+                                style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          )
+                        : ElevatedButton(
+                            onPressed: () => _toggleFollow(profile.id),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(80, 32),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20)),
+                            ),
+                            child: const Text('Follow', style: TextStyle(fontSize: 12)),
+                          ),
                 onTap: () {
                   Navigator.push(
                     context,
