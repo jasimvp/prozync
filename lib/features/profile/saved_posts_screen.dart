@@ -5,14 +5,14 @@ import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/features/home/post_detail_screen.dart';
 import 'package:prozync/models/post_model.dart';
 
-class SavedProjectsScreen extends StatefulWidget {
-  const SavedProjectsScreen({super.key});
+class SavedPostsScreen extends StatefulWidget {
+  const SavedPostsScreen({super.key});
 
   @override
-  State<SavedProjectsScreen> createState() => _SavedProjectsScreenState();
+  State<SavedPostsScreen> createState() => _SavedPostsScreenState();
 }
 
-class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
+class _SavedPostsScreenState extends State<SavedPostsScreen> {
   final _postService = PostService();
 
   @override
@@ -27,7 +27,7 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          'Saved Projects',
+          'Saved Posts',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -80,7 +80,7 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
           ),
           const SizedBox(height: 24),
           const Text(
-            'No saved projects yet',
+            'No saved posts yet',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),

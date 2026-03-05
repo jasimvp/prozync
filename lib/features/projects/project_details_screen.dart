@@ -219,43 +219,51 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Owner Info & Collab Button
-                    Row(
+                    // Owner Info & Actions
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 16,
                       children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundImage: NetworkImage(
-                            'https://ui-avatars.com/api/?name=${widget.project.ownerName}&background=random',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Left Side: Owner Profile
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              widget.project.ownerName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundImage: NetworkImage(
+                                'https://ui-avatars.com/api/?name=${widget.project.ownerName}&background=random',
                               ),
                             ),
-                            Text(
-                              'Project Owner',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.project.ownerName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  'Project Owner',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const Spacer(),
+
+                        // Right Side: Action Buttons
                         if (isOwner)
                           ElevatedButton.icon(
                             onPressed: () => _showCollabSheet(context),
-                            icon: const Icon(
-                              Icons.person_add_outlined,
-                              size: 18,
-                            ),
+                            icon: const Icon(Icons.person_add_outlined, size: 18),
                             label: const Text('Add Collab'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
@@ -267,8 +275,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             ),
                           )
                         else
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               OutlinedButton(
                                 onPressed: () async {
@@ -298,7 +307,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 ),
                                 child: const Text('View Profile'),
                               ),
-                              const SizedBox(width: 8),
                               ListenableBuilder(
                                 listenable: ProjectService(),
                                 builder: (context, _) {
@@ -314,27 +322,24 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                       if (context.mounted && !success) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
-                                            content: Text('Failed to update interest. Please try again.'),
+                                            content: Text('Failed to update interest.'),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
                                       }
                                     },
                                     icon: Icon(
-                                      interested
-                                          ? Icons.star_rounded
-                                          : Icons.star_outline_rounded,
+                                      interested ? Icons.star_rounded : Icons.star_outline_rounded,
                                       size: 18,
                                     ),
                                     label: Text(
-                                      interested
-                                          ? 'Interested (${current.interestedCount})'
+                                      interested 
+                                          ? 'Interested (${current.interestedCount})' 
                                           : 'Interested (${current.interestedCount})',
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: interested
-                                          ? Colors.amber
-                                          : AppTheme.primaryColor,
+                                      backgroundColor: interested ? Colors.amber : AppTheme.primaryColor,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
@@ -346,7 +351,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               ),
                             ],
                           ),
-
                       ],
                     ),
                     const SizedBox(height: 32),

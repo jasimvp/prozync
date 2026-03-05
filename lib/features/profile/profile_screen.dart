@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:prozync/features/profile/settings_screen.dart';
-import 'package:prozync/features/profile/saved_projects_screen.dart';
+import 'package:prozync/features/profile/saved_posts_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
 import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/core/services/profile_service.dart';
@@ -351,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SavedProjectsScreen(),
+                  builder: (context) => const SavedPostsScreen(),
                 ),
               );
             },
@@ -368,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             title: const Text(
-              'Saved Projects',
+              'Saved Posts',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Text(
