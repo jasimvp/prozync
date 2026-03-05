@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:prozync/main.dart';
-import 'package:prozync/features/profile/saved_projects_screen.dart';
+import 'package:prozync/features/profile/saved_posts_screen.dart';
 import 'package:prozync/features/projects/invitations_screen.dart';
 import 'package:prozync/features/profile/change_password_screen.dart';
 import 'package:prozync/core/services/auth_service.dart';
@@ -40,13 +40,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.bookmark_border),
-            title: const Text('Saved Projects'),
+            title: const Text('Saved Posts'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SavedProjectsScreen(),
+                  builder: (context) => const SavedPostsScreen(),
                 ),
               );
             },
