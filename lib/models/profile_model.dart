@@ -54,10 +54,15 @@ class Profile {
       status = 'following';
     }
 
+    final rawUsername = json['username'] ?? json['user_name'] ?? '';
+    final userId = json['user'] is int 
+        ? json['user'] 
+        : (json['user'] is Map ? (json['user']['id'] ?? 0) : 0);
+
     return Profile(
       id: json['id'] ?? 0,
-      user: json['user'] ?? 0,
-      username: json['username'] ?? '',
+      user: userId,
+      username: rawUsername.toString().isNotEmpty ? rawUsername.toString() : 'Unknown',
       email: json['email'] ?? '',
       fullName: json['full_name'] ?? '',
       phone: json['phone'] ?? '',
