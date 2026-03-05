@@ -178,7 +178,7 @@ class _SavedProjectsScreenState extends State<SavedProjectsScreen> {
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
-                      final success = await ProjectService().sendInterestToCollaborate(post.project!);
+                      final success = await ProjectService().toggleInterested(post.project!);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

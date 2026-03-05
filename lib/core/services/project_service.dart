@@ -523,12 +523,47 @@ class ProjectService extends ChangeNotifier {
       return false;
     }
   }
-  Future<bool> sendInterestToCollaborate(int projectId) async {
+  Future<bool> toggleInterested(int projectId) async {
+    // Find in all lists
+    int index = _projects.indexWhere((p) => p.id == projectId);
+    int myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
+
+    Project? original;
+    if (index != -1) original = _projects[index];
+    else if (myRepoIndex != -1) original = _myRepos[myRepoIndex];
+    if (original == null) return false;
+
+    final wasInterested = original.isInterested;
+
+    // Optimistic update
+    final optimistic = original.copyWith(
+      isInterested: !wasInterested,
+      interestedCount: wasInterested
+          ? original.interestedCount - 1
+          : original.interestedCount + 1,
+    );
+    if (index != -1) _projects[index] = optimistic;
+    if (myRepoIndex != -1) _myRepos[myRepoIndex] = optimistic;
+    notifyListeners();
+
     try {
-      final response = await _apiService.post('/projects/$projectId/collaborate/', {});
-      return response.statusCode == 200 || response.statusCode == 201;
+      final response = await _apiService.post('/projects/$projectId/interested/', {});
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final updated = Project.fromJson(body);
+        _updateProjectInLists(projectId, updated);
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback
+        _updateProjectInLists(projectId, original);
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
-      debugPrint('Error sending interest for project $projectId: $e');
+      debugPrint('Error toggling interested for project $projectId: $e');
+      _updateProjectInLists(projectId, original);
+      notifyListeners();
       return false;
     }
   }

@@ -18,8 +18,9 @@ class Project {
   bool isPinned;
   final int likeCount;
   bool isLiked;
-
   final bool isSaved;
+  bool isInterested;
+  final int interestedCount;
 
   Project({
     required this.id,
@@ -40,6 +41,8 @@ class Project {
     this.likeCount = 0,
     this.isLiked = false,
     this.isSaved = false,
+    this.isInterested = false,
+    this.interestedCount = 0,
   });
 
   // UI Compatibility Getters
@@ -96,6 +99,8 @@ class Project {
     int? likeCount,
     bool? isLiked,
     bool? isSaved,
+    bool? isInterested,
+    int? interestedCount,
   }) {
     return Project(
       id: id ?? this.id,
@@ -116,6 +121,8 @@ class Project {
       likeCount: likeCount ?? this.likeCount,
       isLiked: isLiked ?? this.isLiked,
       isSaved: isSaved ?? this.isSaved,
+      isInterested: isInterested ?? this.isInterested,
+      interestedCount: interestedCount ?? this.interestedCount,
     );
   }
 
@@ -139,6 +146,8 @@ class Project {
       likeCount: json['like_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,
       isSaved: json['is_saved'] ?? false,
+      isInterested: json['is_interested'] ?? false,
+      interestedCount: json['interested_count'] ?? 0,
     );
   }
 

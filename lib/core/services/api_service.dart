@@ -45,15 +45,26 @@ class ApiService {
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
     
     if (isUrlEncoded) {
-      return await http.post(
+      final bodyMap = Map<String, String>.from(body);
+      final encodedBody = bodyMap.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+
+      print('POST Request (form): $url');
+      print('POST Body (form): $encodedBody');
+      
+      final resp = await http.post(
         url,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Token $token',
         },
-        body: body,
+        body: encodedBody,
       ).timeout(const Duration(seconds: 60));
+      
+      print('POST Response Status: ${resp.statusCode}');
+      print('POST Response Body: ${resp.body}');
+      return resp;
     }
 
     print('POST Request: $url');

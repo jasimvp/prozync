@@ -8,31 +8,10 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      // Trying documented /auth/login/ which is form-encoded
       final response = await _apiService.post('/auth/login/', {
         'username': username,
         'password': password,
       }, isUrlEncoded: true);
-
-      if (response.statusCode == 200) {
-        final token = AuthToken.fromJson(jsonDecode(response.body));
-        await _apiService.saveToken(token.token);
-        return {'success': true, 'token': token};
-      } else {
-        // Fallback to /auth/signin/ if /login/ fails or isn't handling JSON
-        return await signin(username, password);
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error'};
-    }
-  }
-
-  Future<Map<String, dynamic>> signin(String username, String password) async {
-    try {
-      final response = await _apiService.post('/auth/signin/', {
-        'username': username,
-        'password': password,
-      });
 
       if (response.statusCode == 200) {
         final token = AuthToken.fromJson(jsonDecode(response.body));
@@ -66,10 +45,20 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true};
       } else {
-        return {'success': false, 'message': 'Invalid OTP'};
+        String message = 'Invalid OTP. Please try again.';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData is Map) {
+            message = errorData['detail'] ??
+                errorData['message'] ??
+                errorData['otp'] ??
+                errorData.values.first.toString();
+          }
+        } catch (_) {}
+        return {'success': false, 'message': message};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error'};
+      return {'success': false, 'message': 'Network error. Please check your connection.'};
     }
   }
 

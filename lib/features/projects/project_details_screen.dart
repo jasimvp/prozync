@@ -267,34 +267,86 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             ),
                           )
                         else
-                          OutlinedButton(
-                            onPressed: () async {
-                              await ProfileService().fetchProfiles(
-                                search: widget.project.ownerName,
-                              );
-                              final profile = ProfileService().profiles
-                                  .firstWhere(
-                                    (p) => p.id == widget.project.owner,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () async {
+                                  await ProfileService().fetchProfiles(
+                                    search: widget.project.ownerName,
                                   );
-                              if (mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        OtherUserProfileScreen(
-                                          profile: profile,
-                                        ),
+                                  final profile = ProfileService().profiles
+                                      .firstWhere(
+                                        (p) => p.id == widget.project.owner,
+                                      );
+                                  if (mounted) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            OtherUserProfileScreen(
+                                              profile: profile,
+                                            ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                );
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text('View Profile'),
                               ),
-                            ),
-                            child: const Text('View Profile'),
+                              const SizedBox(width: 8),
+                              ListenableBuilder(
+                                listenable: ProjectService(),
+                                builder: (context, _) {
+                                  final current = ProjectService().getProjectById(
+                                    widget.project.id,
+                                    widget.project,
+                                  );
+                                  final interested = current.isInterested;
+                                  return ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final success = await ProjectService()
+                                          .toggleInterested(widget.project.id);
+                                      if (context.mounted && !success) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Failed to update interest. Please try again.'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: Icon(
+                                      interested
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      interested
+                                          ? 'Interested (${current.interestedCount})'
+                                          : 'Interested (${current.interestedCount})',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: interested
+                                          ? Colors.amber
+                                          : AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
+
                       ],
                     ),
                     const SizedBox(height: 32),

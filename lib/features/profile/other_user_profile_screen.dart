@@ -534,7 +534,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             if (ProfileService().myProfile?.id != project.owner)
               TextButton(
                 onPressed: () async {
-                  final success = await ProjectService().sendInterestToCollaborate(project.id);
+                  final success = await ProjectService().toggleInterested(project.id);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

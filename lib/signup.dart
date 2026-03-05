@@ -58,55 +58,91 @@ class _SignupscreenState extends State<Signupscreen> {
 
   void _showOtpDialog() {
     final otpController = TextEditingController();
+    final email = _emailController.text.trim();
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Email Verification'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('An OTP has been sent to your email. Please enter it below to complete registration.'),
-            const SizedBox(height: 20),
-            TextField(
-              controller: otpController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Enter 6-digit OTP',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (otpController.text.length == 6) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Registration successful! Please login.'),
-                    backgroundColor: Colors.green,
+      builder: (ctx) {
+        bool isVerifying = false;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Email Verification'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('An OTP has been sent to $email. Enter it below to activate your account.'),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Enter 4-digit OTP',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    helperText: '(Use 1234 for testing)',
+                    helperStyle: TextStyle(color: Colors.grey),
                   ),
-                );
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please enter valid 6-digit OTP')),
-                );
-              }
-            },
-            child: const Text('Verify'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isVerifying ? null : () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isVerifying
+                    ? null
+                    : () async {
+                        final otp = otpController.text.trim();
+                        if (otp.length != 4) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
+                          );
+                          return;
+                        }
+
+                        setDialogState(() => isVerifying = true);
+
+                        final result = await _authService.verifySignupOtp(email, otp);
+
+                        if (!mounted) return;
+                        setDialogState(() => isVerifying = false);
+
+                        if (result['success'] == true) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Account verified! You can now log in.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['message'] ?? 'Invalid OTP. Please try again.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                child: isVerifying
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Verify'),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -283,7 +283,7 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            final success = await ProjectService().sendInterestToCollaborate(project.id);
+                            final success = await ProjectService().toggleInterested(project.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

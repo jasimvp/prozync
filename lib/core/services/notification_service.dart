@@ -48,4 +48,31 @@ class NotificationService extends ChangeNotifier {
       debugPrint('Error marking notification as read: $e');
     }
   }
+
+  Future<bool> sendNotification({
+    required int receiver,
+    required String message,
+    int? projectId,
+    int? postId,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'receiver': receiver,
+        'message': message,
+      };
+      if (projectId != null) body['project'] = projectId;
+      if (postId != null) body['post'] = postId;
+
+      final response = await _apiService.post('/notifications/', body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('Notification sent to receiver $receiver');
+        return true;
+      }
+      debugPrint('Failed to send notification: ${response.statusCode} ${response.body}');
+      return false;
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+      return false;
+    }
+  }
 }
