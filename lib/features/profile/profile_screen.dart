@@ -27,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _profileService.fetchMyProfile();
     ProjectService().fetchPinnedProjects();
+    ProjectService().fetchMyRepos();
   }
 
   @override
@@ -72,6 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _buildStatsRow(context, profile),
                           const SizedBox(height: 32),
                           _buildAboutSection(context, profile),
+                          const SizedBox(height: 32),
+                          _buildRecentWorksSection(context),
                           const SizedBox(height: 32),
                           _buildWorksSection(context),
                           const SizedBox(height: 40),
@@ -384,6 +387,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecentWorksSection(BuildContext context) {
+    return ListenableBuilder(
+      listenable: ProjectService(),
+      builder: (context, child) {
+        final recentWorks = ProjectService().myRepos;
+        final isLoading = ProjectService().isMyReposLoading;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Recent Works',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (recentWorks.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(40),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.work_outline_rounded,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No repositories/projects yet.',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: recentWorks.length,
+                  itemBuilder: (context, index) {
+                    final project = recentWorks[index];
+                    return _buildProjectItem(context, project);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

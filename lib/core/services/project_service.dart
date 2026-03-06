@@ -326,7 +326,7 @@ class ProjectService extends ChangeNotifier {
         'receiver': receiverId,
         'status': 'PENDING',
       });
-      return response.statusCode == 201;
+      return response.statusCode == 201 || response.statusCode == 200;
     } catch (e) {
       debugPrint('Error sending invitation: $e');
       return false;
@@ -561,6 +561,19 @@ class ProjectService extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
+        // Fallback: try different endpoint name if 404
+        if (response.statusCode == 404) {
+           final retryResponse = await _apiService.post('/projects/$projectId/toggle_interested/', {});
+           if (retryResponse.statusCode == 200 || retryResponse.statusCode == 201) {
+             final body = jsonDecode(retryResponse.body);
+             if (body is Map && body.containsKey('id')) {
+               final updated = Project.fromJson(body as Map<String, dynamic>);
+               _updateProjectInLists(projectId, updated);
+             }
+             notifyListeners();
+             return true;
+           }
+        }
         // Rollback if we had an optimistic update
         if (original != null) {
           _updateProjectInLists(projectId, original);

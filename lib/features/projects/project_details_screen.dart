@@ -719,7 +719,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           trailing: ElevatedButton(
                             onPressed: () async {
                               final success = await ProjectService()
-                                  .sendInvitation(
+                                  .inviteUser(
                                     widget.project.id,
                                     profile.user, // Use User ID, not Profile ID
                                   );
