@@ -139,7 +139,7 @@ class Project {
       coverImage: json['cover_image'],
       readme: json['readme'],
       isPrivate: json['is_private'] ?? false,
-      collaboratorCount: json['collaborator_count'].toString(),
+      collaboratorCount: (json['collaborator_count'] ?? 0).toString(),
       collaborators: json['collaborators'] ?? [],
       createdAt: DateTime.parse(json['created_at']),
       isPinned: json['is_pinned'] ?? false,

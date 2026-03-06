@@ -372,18 +372,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           itemCount: widget.project.collaborators.length,
                           itemBuilder: (context, index) {
                             final collab = widget.project.collaborators[index];
+                            final String username = (collab is Map ? collab['username'] : collab.toString()) ?? 'Collaborator';
+                            final String? pic = collab is Map ? collab['profile_pic'] : null;
+
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: Tooltip(
-                                message: collab['username'] ?? 'Collaborator',
+                                message: username,
                                   child: CircleAvatar(
                                     radius: 20,
                                     backgroundImage: NetworkImage(
-                                      collab['profile_pic'] != null
-                                          ? (collab['profile_pic'].toString().startsWith('http')
-                                              ? collab['profile_pic']
-                                              : '${AppConstants.baseUrl}/${collab['profile_pic']}')
-                                          : 'https://ui-avatars.com/api/?name=${collab['username']}&background=random',
+                                      pic != null
+                                          ? (pic.startsWith('http')
+                                              ? pic
+                                              : '${AppConstants.baseUrl}/$pic')
+                                          : 'https://ui-avatars.com/api/?name=$username&background=random',
                                     ),
                                     onBackgroundImageError: (e, s) => debugPrint('Collab image error: $e'),
                                   ),

@@ -57,17 +57,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _loadUserProjects() async {
     try {
-      // Fetch projects for this user using their user ID (not profile ID)
-      // project.owner is the Django User ID, which matches profile.user
-      await ProjectService().fetchProjects(
-        search: widget.profile.username,
-      );
+      final projects = await ProjectService().getUserProjects(widget.profile.username);
       if (mounted) {
         setState(() {
-          // Compare against profile.user (User ID), not profile.id (Profile ID)
-          userProjects = ProjectService().projects
-              .where((p) => p.owner == widget.profile.user)
-              .toList();
+          userProjects = projects.where((p) => p.owner == widget.profile.user).toList();
           isLoadingProjects = false;
         });
       }
@@ -305,6 +298,13 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   }
 
   Widget _buildStatsRow(BuildContext context) {
+    int totalStars = 0;
+    int totalCollabs = 0;
+    for (final p in userProjects) {
+      totalStars += p.likeCount;
+      totalCollabs += int.tryParse(p.collaboratorCount) ?? 0;
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -336,6 +336,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               'Followers',
             ),
           ),
+          _buildVerticalDivider(),
+          Expanded(child: _buildStatItem(context, totalStars.toString(), 'Stars')),
+          _buildVerticalDivider(),
+          Expanded(child: _buildStatItem(context, totalCollabs.toString(), 'Collabs')),
         ],
       ),
     );

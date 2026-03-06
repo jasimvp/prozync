@@ -61,6 +61,20 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
+  /// Fetches projects for a specific user without updating the global list.
+  Future<List<Project>> getUserProjects(String username) async {
+    try {
+      final response = await _apiService.get('/projects/?search=$username');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Project.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching user projects: $e');
+    }
+    return [];
+  }
+
   Future<void> fetchMyRepos() async {
     _isMyReposLoading = true;
     Future.microtask(() => notifyListeners());

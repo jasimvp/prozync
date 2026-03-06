@@ -245,35 +245,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildStatsRow(BuildContext context, Profile profile) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return ListenableBuilder(
+      listenable: ProjectService(),
+      builder: (context, child) {
+        final repos = ProjectService().myRepos;
+        int totalStars = 0;
+        int totalCollabs = 0;
+        for (final p in repos) {
+          totalStars += p.likeCount;
+          totalCollabs += int.tryParse(p.collaboratorCount) ?? 0;
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(context, profile.repoCount, 'Projects'),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(context, profile.repoCount, 'Projects'),
+              ),
+              _buildVerticalDivider(),
+              Expanded(
+                child:
+                    _buildStatItem(context, profile.followerCount, 'Followers'),
+              ),
+              _buildVerticalDivider(),
+              Expanded(
+                child: _buildStatItem(context, totalStars.toString(), 'Stars'),
+              ),
+              _buildVerticalDivider(),
+              Expanded(
+                child:
+                    _buildStatItem(context, totalCollabs.toString(), 'Collabs'),
+              ),
+            ],
           ),
-          _buildVerticalDivider(),
-          Expanded(
-            child: _buildStatItem(context, profile.followerCount, 'Followers'),
-          ),
-          _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, '0', 'Stars')),
-          _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, '0', 'Collabs')),
-        ],
-      ),
+        );
+      },
     );
   }
 

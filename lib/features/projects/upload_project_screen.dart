@@ -114,10 +114,10 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
               filename: fileName,
               contentType: MediaType.parse(mimeType),
             ));
-          } else if (!kIsWeb && filePath != null) {
+          } else if (!kIsWeb && _selectedCoverImage != null) {
             files.add(await http.MultipartFile.fromPath(
               key,
-              filePath,
+              _selectedCoverImage!.path,
               contentType: MediaType.parse(mimeType),
             ));
           }
