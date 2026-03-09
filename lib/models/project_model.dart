@@ -18,7 +18,7 @@ class Project {
   bool isPinned;
   final int likeCount;
   bool isLiked;
-  final bool isSaved;
+  bool isSaved;
   bool isInterested;
   final int interestedCount;
 
@@ -56,27 +56,31 @@ class Project {
     if (coverImage == null || coverImage!.isEmpty) {
       return 'https://ui-avatars.com/api/?name=$projectName&background=random';
     }
-    
+
     String imageUrl = coverImage!;
-    
+
     // Fix for backends returning localhost URLs instead of production ones
-    if (imageUrl.contains('127.0.0.1:8000') || imageUrl.contains('localhost:8000')) {
-      imageUrl = imageUrl.replaceAll(RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'), '');
+    if (imageUrl.contains('127.0.0.1:8000') ||
+        imageUrl.contains('localhost:8000')) {
+      imageUrl = imageUrl.replaceAll(
+        RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'),
+        '',
+      );
       // Ensure we don't have double slashes
       if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
       return '${AppConstants.baseUrl}/$imageUrl';
     }
-    
+
     // If it's already a full production URL, use it
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     }
-    
+
     // Check if path starts with slash
     if (imageUrl.startsWith('/')) {
       imageUrl = imageUrl.substring(1);
     }
-    
+
     return '${AppConstants.baseUrl}/$imageUrl';
   }
 
@@ -127,21 +131,34 @@ class Project {
   }
 
   factory Project.fromJson(Map<String, dynamic> json) {
+    // Handle owner being an int or a Map
+    final rawOwner = json['owner'];
+    final int ownerId = rawOwner is int
+        ? rawOwner
+        : (rawOwner is Map ? (rawOwner['id'] ?? 0) : 0);
+
+    // Handle owner_name variations
+    final String ownerName =
+        json['owner_name'] ??
+        (rawOwner is Map ? (rawOwner['username'] ?? 'User') : 'User');
+
     return Project(
-      id: json['id'],
-      owner: json['owner'],
-      ownerName: json['owner_name'],
-      projectName: json['project_name'],
-      slug: json['slug'],
+      id: json['id'] ?? 0,
+      owner: ownerId,
+      ownerName: ownerName,
+      projectName: json['project_name'] ?? json['name'] ?? 'Untitled Project',
+      slug: json['slug'] ?? '',
       description: json['description'] ?? '',
-      technology: json['technology'] ?? '',
+      technology: json['technology'] ?? json['language'] ?? '',
       projectZip: json['project_zip'],
       coverImage: json['cover_image'],
       readme: json['readme'],
       isPrivate: json['is_private'] ?? false,
       collaboratorCount: (json['collaborator_count'] ?? 0).toString(),
       collaborators: json['collaborators'] ?? [],
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
       isPinned: json['is_pinned'] ?? false,
       likeCount: json['like_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,

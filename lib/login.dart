@@ -14,15 +14,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
 
   void _handleLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
+        const SnackBar(content: Text('Please enter username and password')),
       );
       return;
     }
@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // API expects username, using email as username for now as per common pattern
     final result = await _authService.login(
-      _emailController.text.trim(),
+      _usernameController.text.trim(),
       _passwordController.text.trim(),
     );
 
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Spacer(flex: 3),
                       Center(
                         child: TextFormField(
-                          controller: _emailController,
+                          controller: _usernameController,
                           decoration: InputDecoration(
                             labelText: 'Username',
                             helperText:

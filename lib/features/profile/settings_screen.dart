@@ -5,6 +5,10 @@ import 'package:prozync/features/projects/invitations_screen.dart';
 import 'package:prozync/features/profile/change_password_screen.dart';
 import 'package:prozync/core/services/auth_service.dart';
 import 'package:prozync/core/services/profile_service.dart';
+import 'package:prozync/core/services/post_service.dart';
+import 'package:prozync/core/services/project_service.dart';
+import 'package:prozync/core/services/chat_service.dart';
+import 'package:prozync/core/services/notification_service.dart';
 import 'package:prozync/splashscreen.dart';
 import 'package:prozync/features/activity/activity_screen.dart';
 
@@ -83,9 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const ActivityScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const ActivityScreen()),
               );
             },
           ),
@@ -101,6 +103,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
               await AuthService().logout();
+              ProfileService().clear();
+              ProjectService().clear();
+              PostService().clear();
+              ChatService().clear();
+              NotificationService().clear();
+
               if (mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const Splashscreen()),
@@ -127,5 +135,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
 }

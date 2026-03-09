@@ -19,13 +19,20 @@ class ConnectionRequest {
 
   factory ConnectionRequest.fromJson(Map<String, dynamic> json) {
     return ConnectionRequest(
-      id: json['id'],
-      sender: json['sender'],
-      senderName: json['sender_name'] ?? '',
-      receiver: json['receiver'],
-      receiverName: json['receiver_name'] ?? '',
+      id: json['id'] ?? 0,
+      sender: json['sender'] is int
+          ? json['sender']
+          : (json['sender']?['id'] ?? 0),
+      senderName: json['sender_name'] ?? (json['sender']?['username'] ?? ''),
+      receiver: json['receiver'] is int
+          ? json['receiver']
+          : (json['receiver']?['id'] ?? 0),
+      receiverName:
+          json['receiver_name'] ?? (json['receiver']?['username'] ?? ''),
       status: json['status'] ?? 'PENDING',
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 }
@@ -51,13 +58,22 @@ class Invitation {
 
   factory Invitation.fromJson(Map<String, dynamic> json) {
     return Invitation(
-      id: json['id'],
-      project: json['project'],
-      projectName: json['project_name'] ?? '',
+      id: json['id'] ?? 0,
+      project: json['project'] is int
+          ? json['project']
+          : (json['project']?['id'] ?? 0),
+      projectName:
+          json['project_name'] ?? (json['project']?['project_name'] ?? ''),
       senderName: json['sender_name'] ?? '',
-      receiver: json['receiver'],
+      receiver: json['receiver'] is int
+          ? json['receiver']
+          : (json['receiver']?['id'] ?? 0),
       status: json['status'] ?? 'PENDING',
-      sentAt: DateTime.parse(json['sent_at']),
+      sentAt: json['sent_at'] != null
+          ? DateTime.parse(json['sent_at'])
+          : (json['created_at'] != null
+                ? DateTime.parse(json['created_at'])
+                : DateTime.now()),
     );
   }
 }

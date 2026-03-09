@@ -18,7 +18,7 @@ class AuthService {
         await _apiService.saveToken(token.token);
         return {'success': true, 'token': token};
       } else {
-        String message = 'Invalid credentials';
+        String message = 'Login failed';
         try {
           final errorData = jsonDecode(response.body);
           if (errorData is Map) {
@@ -27,7 +27,9 @@ class AuthService {
                 errorData['message'] ??
                 errorData.values.first.toString();
           }
-        } catch (_) {}
+        } catch (_) {
+          message = 'Server error: ${response.statusCode}';
+        }
         return {'success': false, 'message': message};
       }
     } catch (e) {
@@ -49,7 +51,8 @@ class AuthService {
         try {
           final errorData = jsonDecode(response.body);
           if (errorData is Map) {
-            message = errorData['detail'] ??
+            message =
+                errorData['detail'] ??
                 errorData['message'] ??
                 errorData['otp'] ??
                 errorData.values.first.toString();
@@ -58,7 +61,10 @@ class AuthService {
         return {'success': false, 'message': message};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error. Please check your connection.'};
+      return {
+        'success': false,
+        'message': 'Network error. Please check your connection.',
+      };
     }
   }
 
@@ -140,7 +146,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    // Backend doesn't have a logout endpoint currently, 
+    // Backend doesn't have a logout endpoint currently,
     // so we just clear the token locally.
     await _apiService.clearToken();
   }

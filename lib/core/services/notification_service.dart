@@ -23,7 +23,9 @@ class NotificationService extends ChangeNotifier {
       final response = await _apiService.get('/notifications/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _notifications = data.map((json) => NotificationModel.fromJson(json)).toList();
+        _notifications = data
+            .map((json) => NotificationModel.fromJson(json))
+            .toList();
       }
     } catch (e) {
       debugPrint('Error fetching notifications: $e');
@@ -56,10 +58,7 @@ class NotificationService extends ChangeNotifier {
     int? postId,
   }) async {
     try {
-      final body = <String, dynamic>{
-        'receiver': receiver,
-        'message': message,
-      };
+      final body = <String, dynamic>{'receiver': receiver, 'message': message};
       if (projectId != null) body['project'] = projectId;
       if (postId != null) body['post'] = postId;
 
@@ -68,11 +67,19 @@ class NotificationService extends ChangeNotifier {
         debugPrint('Notification sent to receiver $receiver');
         return true;
       }
-      debugPrint('Failed to send notification: ${response.statusCode} ${response.body}');
+      debugPrint(
+        'Failed to send notification: ${response.statusCode} ${response.body}',
+      );
       return false;
     } catch (e) {
       debugPrint('Error sending notification: $e');
       return false;
     }
+  }
+
+  void clear() {
+    _notifications = [];
+    _isLoading = false;
+    notifyListeners();
   }
 }

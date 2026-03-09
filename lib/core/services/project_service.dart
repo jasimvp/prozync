@@ -440,7 +440,10 @@ class ProjectService extends ChangeNotifier {
     return null;
   }
 
-  Future<Project?> partialUpdateProjectById(int id, Map<String, dynamic> data) async {
+  Future<Project?> partialUpdateProjectById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.patch('/projects/$id/', data);
       if (response.statusCode == 200) {
@@ -452,14 +455,76 @@ class ProjectService extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> saveProject(int projectId) async {
+  Future<bool> toggleSaveProject(int projectId) async {
+    // 1. Find the project in all lists
+    int index = _projects.indexWhere((p) => p.id == projectId);
+    int savedIndex = _savedProjects.indexWhere((p) => p.id == projectId);
+
+    Project? original;
+    if (index != -1)
+      original = _projects[index];
+    else if (savedIndex != -1)
+      original = _savedProjects[savedIndex];
+
+    if (original == null) return false;
+
+    final wasSaved = original.isSaved;
+
+    // 2. Perform Optimistic Update
+    final optimistic = original.copyWith(isSaved: !wasSaved);
+
+    // Update main lists
+    if (index != -1) _projects[index] = optimistic;
+
+    // Manage _savedProjects list based on new state
+    if (!wasSaved) {
+      if (savedIndex == -1) {
+        _savedProjects.insert(0, optimistic);
+      } else {
+        _savedProjects[savedIndex] = optimistic;
+      }
+    } else {
+      if (savedIndex != -1) {
+        _savedProjects.removeAt(savedIndex);
+      }
+    }
+
+    notifyListeners();
+
     try {
-      final response = await _apiService.post('/projects/$projectId/save_project/', {});
-      return response.statusCode == 200 || response.statusCode == 201;
+      final response = await _apiService.post(
+        '/projects/$projectId/save_project/',
+        {},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        Project updated;
+        if (body is Map && body.containsKey('id')) {
+          updated = Project.fromJson(body as Map<String, dynamic>);
+        } else {
+          // If body is partial like {"is_saved": true}
+          final serverState = body['is_saved'] ?? !wasSaved;
+          updated = original.copyWith(isSaved: serverState);
+        }
+        _updateProjectInLists(projectId, updated);
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback
+        _updateProjectInLists(projectId, original);
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
-      debugPrint('Error saving project $projectId: $e');
+      debugPrint('Error toggling save for project $projectId: $e');
+      _updateProjectInLists(projectId, original);
+      notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> saveProject(int projectId) async {
+    return toggleSaveProject(projectId);
   }
 
   Future<void> fetchMySavedProjects() async {
@@ -491,7 +556,10 @@ class ProjectService extends ChangeNotifier {
     return null;
   }
 
-  Future<Invitation?> updateInvitationById(int id, Map<String, dynamic> data) async {
+  Future<Invitation?> updateInvitationById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.put('/invitations/$id/', data);
       if (response.statusCode == 200) {
@@ -503,7 +571,10 @@ class ProjectService extends ChangeNotifier {
     return null;
   }
 
-  Future<Invitation?> partialUpdateInvitationById(int id, Map<String, dynamic> data) async {
+  Future<Invitation?> partialUpdateInvitationById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.patch('/invitations/$id/', data);
       if (response.statusCode == 200) {
@@ -537,14 +608,17 @@ class ProjectService extends ChangeNotifier {
       return false;
     }
   }
+
   Future<bool> toggleInterested(int projectId) async {
     // Find in all lists
     int index = _projects.indexWhere((p) => p.id == projectId);
     int myRepoIndex = _myRepos.indexWhere((p) => p.id == projectId);
 
     Project? original;
-    if (index != -1) original = _projects[index];
-    else if (myRepoIndex != -1) original = _myRepos[myRepoIndex];
+    if (index != -1)
+      original = _projects[index];
+    else if (myRepoIndex != -1)
+      original = _myRepos[myRepoIndex];
 
     // If project is not cached (e.g., viewing from another user's profile),
     // still call the API directly
@@ -564,7 +638,10 @@ class ProjectService extends ChangeNotifier {
     }
 
     try {
-      final response = await _apiService.post('/projects/$projectId/interested/', {});
+      final response = await _apiService.post(
+        '/projects/$projectId/interested/',
+        {},
+      );
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
         // Only try to parse a full project if the response has an id field
@@ -577,23 +654,29 @@ class ProjectService extends ChangeNotifier {
       } else {
         // Fallback: try different endpoint name if 404
         if (response.statusCode == 404) {
-           final retryResponse = await _apiService.post('/projects/$projectId/toggle_interested/', {});
-           if (retryResponse.statusCode == 200 || retryResponse.statusCode == 201) {
-             final body = jsonDecode(retryResponse.body);
-             if (body is Map && body.containsKey('id')) {
-               final updated = Project.fromJson(body as Map<String, dynamic>);
-               _updateProjectInLists(projectId, updated);
-             }
-             notifyListeners();
-             return true;
-           }
+          final retryResponse = await _apiService.post(
+            '/projects/$projectId/toggle_interested/',
+            {},
+          );
+          if (retryResponse.statusCode == 200 ||
+              retryResponse.statusCode == 201) {
+            final body = jsonDecode(retryResponse.body);
+            if (body is Map && body.containsKey('id')) {
+              final updated = Project.fromJson(body as Map<String, dynamic>);
+              _updateProjectInLists(projectId, updated);
+            }
+            notifyListeners();
+            return true;
+          }
         }
         // Rollback if we had an optimistic update
         if (original != null) {
           _updateProjectInLists(projectId, original);
           notifyListeners();
         }
-        debugPrint('toggleInterested failed: ${response.statusCode} ${response.body}');
+        debugPrint(
+          'toggleInterested failed: ${response.statusCode} ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -604,5 +687,17 @@ class ProjectService extends ChangeNotifier {
       }
       return false;
     }
+  }
+
+  void clear() {
+    _projects = [];
+    _myRepos = [];
+    _pinnedProjects = [];
+    _savedProjects = [];
+    _invitations = [];
+    _isLoading = false;
+    _isPinnedLoading = false;
+    _isMyReposLoading = false;
+    notifyListeners();
   }
 }

@@ -67,7 +67,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                 return RefreshIndicator(
                   onRefresh: () => _postService.fetchSavedPosts(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
                     itemCount: savedPosts.length,
                     itemBuilder: (context, index) =>
                         _buildSavedPostCard(context, savedPosts[index]),
@@ -92,7 +95,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                 return RefreshIndicator(
                   onRefresh: () => _projectService.fetchMySavedProjects(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
                     itemCount: savedProjects.length,
                     itemBuilder: (context, index) =>
                         _buildSavedProjectCard(context, savedProjects[index]),
@@ -151,9 +157,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => PostDetailScreen(post: post),
-          ),
+          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)),
         );
       },
       child: Container(
@@ -197,7 +201,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                         ),
                         Text(
                           _getTimeAgo(post.createdAt),
-                          style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
@@ -236,15 +243,20 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                     const SizedBox(width: 8),
                     TextButton(
                       onPressed: () async {
-                        final success = await ProjectService()
-                            .toggleInterested(post.project!);
+                        final success = await ProjectService().toggleInterested(
+                          post.project!,
+                        );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(success
-                                  ? 'Interest sent for this project!'
-                                  : 'Failed to send interest.'),
-                              backgroundColor: success ? Colors.green : Colors.red,
+                              content: Text(
+                                success
+                                    ? 'Interest sent for this project!'
+                                    : 'Failed to send interest.',
+                              ),
+                              backgroundColor: success
+                                  ? Colors.green
+                                  : Colors.red,
                             ),
                           );
                         }
@@ -255,8 +267,13 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text('Interested',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Interested',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                   // Unsave button
@@ -268,7 +285,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
             // Post content
             if (post.content.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 child: Text(
                   post.content,
                   style: const TextStyle(fontSize: 15, height: 1.5),
@@ -396,7 +416,10 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                         ),
                         Text(
                           'by @${project.ownerName}',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -478,7 +501,9 @@ class _ProjectUnpinButtonState extends State<_ProjectUnpinButton> {
       icon: const Icon(Icons.bookmark_rounded, color: Colors.amber),
       onPressed: () async {
         setState(() => _loading = true);
-        final success = await widget.projectService.togglePin(widget.projectId);
+        final success = await widget.projectService.toggleSaveProject(
+          widget.projectId,
+        );
         if (mounted) {
           setState(() => _loading = false);
           if (!success) {

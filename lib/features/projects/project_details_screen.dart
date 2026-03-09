@@ -82,30 +82,47 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                   return IconButton(
                     icon: Icon(
-                      isPinned
-                          ? (isOwner ? Icons.push_pin : Icons.bookmark_rounded)
-                          : (isOwner
-                                ? Icons.push_pin_outlined
+                      isOwner
+                          ? (isPinned
+                                ? Icons.push_pin
+                                : Icons.push_pin_outlined)
+                          : (currentProject.isSaved
+                                ? Icons.bookmark_rounded
                                 : Icons.bookmark_border_rounded),
-                      color: isPinned
-                          ? (isOwner ? Colors.blue : Colors.amber)
-                          : Colors.white,
+                      color: isOwner
+                          ? (isPinned ? Colors.blue : Colors.white)
+                          : (currentProject.isSaved
+                                ? Colors.amber
+                                : Colors.white),
                     ),
                     onPressed: () async {
-                      final success = await ProjectService().togglePin(
-                        widget.project.id,
-                      );
+                      final bool success;
+                      if (isOwner) {
+                        success = await ProjectService().togglePin(
+                          widget.project.id,
+                        );
+                      } else {
+                        success = await ProjectService().toggleSaveProject(
+                          widget.project.id,
+                        );
+                      }
+
                       if (context.mounted && success) {
+                        // Re-fetch state to match new state
+                        final stateAfter = ProjectService().getProjectById(
+                          widget.project.id,
+                          widget.project,
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               isOwner
-                                  ? (isPinned
-                                        ? 'Project unpinned'
-                                        : 'Project pinned!')
-                                  : (isPinned
-                                        ? 'Project removed from saved'
-                                        : 'Project saved!'),
+                                  ? (stateAfter.isPinned
+                                        ? 'Project pinned!'
+                                        : 'Project unpinned')
+                                  : (stateAfter.isSaved
+                                        ? 'Project saved!'
+                                        : 'Project removed from saved'),
                             ),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -263,7 +280,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         if (isOwner)
                           ElevatedButton.icon(
                             onPressed: () => _showCollabSheet(context),
-                            icon: const Icon(Icons.person_add_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.person_add_outlined,
+                              size: 18,
+                            ),
                             label: const Text('Add Collab'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
@@ -310,36 +330,45 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               ListenableBuilder(
                                 listenable: ProjectService(),
                                 builder: (context, _) {
-                                  final current = ProjectService().getProjectById(
-                                    widget.project.id,
-                                    widget.project,
-                                  );
+                                  final current = ProjectService()
+                                      .getProjectById(
+                                        widget.project.id,
+                                        widget.project,
+                                      );
                                   final interested = current.isInterested;
                                   return ElevatedButton.icon(
                                     onPressed: () async {
                                       final success = await ProjectService()
                                           .toggleInterested(widget.project.id);
                                       if (context.mounted && !success) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('Failed to update interest.'),
+                                            content: Text(
+                                              'Failed to update interest.',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
                                       }
                                     },
                                     icon: Icon(
-                                      interested ? Icons.star_rounded : Icons.star_outline_rounded,
+                                      interested
+                                          ? Icons.star_rounded
+                                          : Icons.star_outline_rounded,
                                       size: 18,
                                     ),
                                     label: Text(
-                                      interested 
-                                          ? 'Interested (${current.interestedCount})' 
+                                      interested
+                                          ? 'Interested (${current.interestedCount})'
                                           : 'Interested (${current.interestedCount})',
                                       style: const TextStyle(fontSize: 13),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: interested ? Colors.amber : AppTheme.primaryColor,
+                                      backgroundColor: interested
+                                          ? Colors.amber
+                                          : AppTheme.primaryColor,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
@@ -372,24 +401,31 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           itemCount: widget.project.collaborators.length,
                           itemBuilder: (context, index) {
                             final collab = widget.project.collaborators[index];
-                            final String username = (collab is Map ? collab['username'] : collab.toString()) ?? 'Collaborator';
-                            final String? pic = collab is Map ? collab['profile_pic'] : null;
+                            final String username =
+                                (collab is Map
+                                    ? collab['username']
+                                    : collab.toString()) ??
+                                'Collaborator';
+                            final String? pic = collab is Map
+                                ? collab['profile_pic']
+                                : null;
 
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: Tooltip(
                                 message: username,
-                                  child: CircleAvatar(
-                                    radius: 20,
-                                    backgroundImage: NetworkImage(
-                                      pic != null
-                                          ? (pic.startsWith('http')
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundImage: NetworkImage(
+                                    pic != null
+                                        ? (pic.startsWith('http')
                                               ? pic
                                               : '${AppConstants.baseUrl}/$pic')
-                                          : 'https://ui-avatars.com/api/?name=$username&background=random',
-                                    ),
-                                    onBackgroundImageError: (e, s) => debugPrint('Collab image error: $e'),
+                                        : 'https://ui-avatars.com/api/?name=$username&background=random',
                                   ),
+                                  onBackgroundImageError: (e, s) =>
+                                      debugPrint('Collab image error: $e'),
+                                ),
                               ),
                             );
                           },
@@ -711,21 +747,25 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         final profile = searchResults[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundImage: NetworkImage(profile.fullProfilePic),
-                            onBackgroundImageError: (e, s) => debugPrint('Search result image error: $e'),
+                            backgroundImage: NetworkImage(
+                              profile.fullProfilePic,
+                            ),
+                            onBackgroundImageError: (e, s) =>
+                                debugPrint('Search result image error: $e'),
                           ),
                           title: Text(
-                            profile.fullName.isNotEmpty ? profile.fullName : profile.username,
+                            profile.fullName.isNotEmpty
+                                ? profile.fullName
+                                : profile.username,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(profile.profession),
                           trailing: ElevatedButton(
                             onPressed: () async {
-                              final success = await ProjectService()
-                                  .inviteUser(
-                                    widget.project.id,
-                                    profile.user, // Use User ID, not Profile ID
-                                  );
+                              final success = await ProjectService().inviteUser(
+                                widget.project.id,
+                                profile.user, // Use User ID, not Profile ID
+                              );
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(

@@ -27,7 +27,7 @@ class ChatService extends ChangeNotifier {
       if (ProfileService().myProfile == null) {
         await ProfileService().fetchMyProfile();
       }
-      
+
       // Assuming GET /api/messages/ returns all messages or recent ones
       // We will group them to form the chat list
       final response = await _apiService.get('/messages/');
@@ -44,7 +44,7 @@ class ChatService extends ChangeNotifier {
           final otherId = msg.isMe ? (msg.receiverId ?? 0) : msg.senderId;
           if (otherId == 0) continue; // Skip invalid
           if (!grouped.containsKey(otherId)) grouped[otherId] = [];
-          
+
           // Apply local read status
           final isActuallyRead = msg.isRead || _readMessageIds.contains(msg.id);
           final processedMsg = Message(
@@ -58,7 +58,7 @@ class ChatService extends ChangeNotifier {
             createdAt: msg.createdAt,
             isMe: msg.isMe,
           );
-          
+
           grouped[otherId]!.add(processedMsg);
         }
 
@@ -113,26 +113,29 @@ class ChatService extends ChangeNotifier {
             .map((json) => Message.fromJson(json, currentUserId))
             .toList();
 
-        _currentMessages = allMessages.where((m) {
-          return (m.senderId == otherUserId && m.isMe == false) ||
-              (m.isMe == true && m.receiverId == otherUserId);
-        }).map((m) {
-          // Apply local read status
-          if (_readMessageIds.contains(m.id)) {
-            return Message(
-              id: m.id,
-              senderId: m.senderId,
-              senderName: m.senderName,
-              receiverId: m.receiverId,
-              receiverName: m.receiverName,
-              text: m.text,
-              isRead: true,
-              createdAt: m.createdAt,
-              isMe: m.isMe,
-            );
-          }
-          return m;
-        }).toList();
+        _currentMessages = allMessages
+            .where((m) {
+              return (m.senderId == otherUserId && m.isMe == false) ||
+                  (m.isMe == true && m.receiverId == otherUserId);
+            })
+            .map((m) {
+              // Apply local read status
+              if (_readMessageIds.contains(m.id)) {
+                return Message(
+                  id: m.id,
+                  senderId: m.senderId,
+                  senderName: m.senderName,
+                  receiverId: m.receiverId,
+                  receiverName: m.receiverName,
+                  text: m.text,
+                  isRead: true,
+                  createdAt: m.createdAt,
+                  isMe: m.isMe,
+                );
+              }
+              return m;
+            })
+            .toList();
 
         _currentMessages.sort(
           (a, b) => a.createdAt.compareTo(b.createdAt),
@@ -279,15 +282,27 @@ class ChatService extends ChangeNotifier {
 
   Future<List<Message>> fetchConversation(int otherUserId) async {
     try {
-      final response = await _apiService.get('/messages/conversation/?user_id=$otherUserId');
+      final response = await _apiService.get(
+        '/messages/conversation/?user_id=$otherUserId',
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         final currentUserId = ProfileService().myProfile?.user ?? 0;
-        return data.map((json) => Message.fromJson(json, currentUserId)).toList();
+        return data
+            .map((json) => Message.fromJson(json, currentUserId))
+            .toList();
       }
     } catch (e) {
       debugPrint('Error fetching conversation with $otherUserId: $e');
     }
     return [];
+  }
+
+  void clear() {
+    _chats = [];
+    _currentMessages = [];
+    _isLoading = false;
+    _readMessageIds.clear();
+    notifyListeners();
   }
 }

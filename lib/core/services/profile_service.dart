@@ -26,7 +26,9 @@ class ProfileService extends ChangeNotifier {
     Future.microtask(() => notifyListeners());
 
     try {
-      final endpoint = search != null ? '/profiles/?search=$search' : '/profiles/';
+      final endpoint = search != null
+          ? '/profiles/?search=$search'
+          : '/profiles/';
       final response = await _apiService.get(endpoint);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -78,14 +80,23 @@ class ProfileService extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> updateProfile(Map<String, dynamic> data, {http.MultipartFile? profilePic}) async {
+  Future<bool> updateProfile(
+    Map<String, dynamic> data, {
+    http.MultipartFile? profilePic,
+  }) async {
     try {
       http.Response response;
-      
+
       if (profilePic != null) {
         // Convert map values to strings for multipart fields
-        final Map<String, String> fields = data.map((key, value) => MapEntry(key, value.toString()));
-        response = await _apiService.patchMultipart('/profiles/me/', fields, files: profilePic != null ? [profilePic] : null);
+        final Map<String, String> fields = data.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
+        response = await _apiService.patchMultipart(
+          '/profiles/me/',
+          fields,
+          files: profilePic != null ? [profilePic] : null,
+        );
       } else {
         response = await _apiService.patch('/profiles/me/', data);
       }
@@ -107,7 +118,7 @@ class ProfileService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final String detail = (data['detail'] ?? '').toString();
-        
+
         // Fetch updated profile to get new follower count
         final updatedProfile = await fetchProfileById(id);
         if (updatedProfile != null) {
@@ -133,7 +144,9 @@ class ProfileService extends ChangeNotifier {
       final response = await _apiService.get('/connections/');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        _connections = data.map((json) => ConnectionRequest.fromJson(json)).toList();
+        _connections = data
+            .map((json) => ConnectionRequest.fromJson(json))
+            .toList();
       }
     } catch (e) {
       debugPrint('Error fetching connections: $e');
@@ -145,7 +158,9 @@ class ProfileService extends ChangeNotifier {
 
   Future<bool> sendConnectionRequest(int receiverId) async {
     try {
-      final response = await _apiService.post('/connections/', {'receiver': receiverId});
+      final response = await _apiService.post('/connections/', {
+        'receiver': receiverId,
+      });
       if (response.statusCode == 201) {
         fetchConnections();
         return true;
@@ -158,7 +173,9 @@ class ProfileService extends ChangeNotifier {
 
   Future<bool> respondToConnection(int id, String status) async {
     try {
-      final response = await _apiService.post('/connections/$id/respond/', {'status': status});
+      final response = await _apiService.post('/connections/$id/respond/', {
+        'status': status,
+      });
       if (response.statusCode == 200) {
         fetchConnections();
         return true;
@@ -193,7 +210,10 @@ class ProfileService extends ChangeNotifier {
     return null;
   }
 
-  Future<Profile?> partialUpdateProfileById(int id, Map<String, dynamic> data) async {
+  Future<Profile?> partialUpdateProfileById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.patch('/profiles/$id/', data);
       if (response.statusCode == 200) {
@@ -250,7 +270,10 @@ class ProfileService extends ChangeNotifier {
     return null;
   }
 
-  Future<ConnectionRequest?> updateConnectionById(int id, Map<String, dynamic> data) async {
+  Future<ConnectionRequest?> updateConnectionById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.put('/connections/$id/', data);
       if (response.statusCode == 200) {
@@ -262,7 +285,10 @@ class ProfileService extends ChangeNotifier {
     return null;
   }
 
-  Future<ConnectionRequest?> partialUpdateConnectionById(int id, Map<String, dynamic> data) async {
+  Future<ConnectionRequest?> partialUpdateConnectionById(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final response = await _apiService.patch('/connections/$id/', data);
       if (response.statusCode == 200) {
@@ -282,5 +308,13 @@ class ProfileService extends ChangeNotifier {
       debugPrint('Error deleting connection $id: $e');
       return false;
     }
+  }
+
+  void clear() {
+    _myProfile = null;
+    _profiles = [];
+    _connections = [];
+    _isLoading = false;
+    notifyListeners();
   }
 }

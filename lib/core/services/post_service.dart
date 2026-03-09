@@ -114,7 +114,7 @@ class PostService extends ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final index = _posts.indexWhere((p) => p.id == id);
         final savedIndex = _savedPosts.indexWhere((p) => p.id == id);
-        
+
         if (index != -1) {
           final wasSaved = _posts[index].isSaved;
           _posts[index] = _posts[index].copyWith(isSaved: !wasSaved);
@@ -127,7 +127,7 @@ class PostService extends ChangeNotifier {
         } else if (savedIndex != -1) {
           _savedPosts.removeAt(savedIndex);
         }
-        
+
         notifyListeners();
         return true;
       } else {
@@ -270,5 +270,12 @@ class PostService extends ChangeNotifier {
       debugPrint('Error deleting post: $e');
     }
     return false;
+  }
+
+  void clear() {
+    _posts = [];
+    _savedPosts = [];
+    _isLoading = false;
+    notifyListeners();
   }
 }
