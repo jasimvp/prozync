@@ -29,7 +29,9 @@ class ApiService {
       'Accept': 'application/json',
     };
     if (token != null) {
-      headers['Authorization'] = 'Token $token';
+      // Backend uses Bearer auth (see Swagger schema), so send the token
+      // in the standard Authorization header format.
+      headers['Authorization'] = 'Bearer $token';
     }
     return headers;
   }
@@ -37,31 +39,42 @@ class ApiService {
   Future<http.Response> get(String endpoint) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.get(url, headers: _getHeaders(token)).timeout(const Duration(seconds: 60));
+    return await http
+        .get(url, headers: _getHeaders(token))
+        .timeout(const Duration(seconds: 60));
   }
 
-  Future<http.Response> post(String endpoint, dynamic body, {bool isUrlEncoded = false}) async {
+  Future<http.Response> post(
+    String endpoint,
+    dynamic body, {
+    bool isUrlEncoded = false,
+  }) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    
+
     if (isUrlEncoded) {
       final bodyMap = Map<String, String>.from(body);
       final encodedBody = bodyMap.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+          )
           .join('&');
 
       print('POST Request (form): $url');
       print('POST Body (form): $encodedBody');
-      
-      final resp = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: encodedBody,
-      ).timeout(const Duration(seconds: 60));
-      
+
+      final resp = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json',
+            },
+            body: encodedBody,
+          )
+          .timeout(const Duration(seconds: 60));
+
       print('POST Response Status: ${resp.statusCode}');
       print('POST Response Body: ${resp.body}');
       return resp;
@@ -70,11 +83,9 @@ class ApiService {
     print('POST Request: $url');
     print('POST Body: ${jsonEncode(body)}');
 
-    final response = await http.post(
-      url,
-      headers: _getHeaders(token),
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 60));
+    final response = await http
+        .post(url, headers: _getHeaders(token), body: jsonEncode(body))
+        .timeout(const Duration(seconds: 60));
 
     print('POST Response Status: ${response.statusCode}');
     print('POST Response Body: ${response.body}');
@@ -84,57 +95,70 @@ class ApiService {
   Future<http.Response> put(String endpoint, dynamic body) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.put(
-      url,
-      headers: _getHeaders(token),
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 60));
+    return await http
+        .put(url, headers: _getHeaders(token), body: jsonEncode(body))
+        .timeout(const Duration(seconds: 60));
   }
 
   Future<http.Response> patch(String endpoint, dynamic body) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.patch(
-      url,
-      headers: _getHeaders(token),
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 60));
+    return await http
+        .patch(url, headers: _getHeaders(token), body: jsonEncode(body))
+        .timeout(const Duration(seconds: 60));
   }
 
-  Future<http.Response> postMultipart(String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
+  Future<http.Response> postMultipart(
+    String endpoint,
+    Map<String, String> fields, {
+    List<http.MultipartFile>? files,
+  }) async {
     return _sendMultipart('POST', endpoint, fields, files: files);
   }
 
-  Future<http.Response> patchMultipart(String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
+  Future<http.Response> patchMultipart(
+    String endpoint,
+    Map<String, String> fields, {
+    List<http.MultipartFile>? files,
+  }) async {
     return _sendMultipart('PATCH', endpoint, fields, files: files);
   }
 
-  Future<http.Response> _sendMultipart(String method, String endpoint, Map<String, String> fields, {List<http.MultipartFile>? files}) async {
+  Future<http.Response> _sendMultipart(
+    String method,
+    String endpoint,
+    Map<String, String> fields, {
+    List<http.MultipartFile>? files,
+  }) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
     final request = http.MultipartRequest(method, url);
-    
+
     request.headers.addAll({
       'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
+      if (token != null) 'Authorization': 'Bearer $token',
     });
-    
+
     request.fields.addAll(fields);
     if (files != null) {
       request.files.addAll(files);
     }
-    
+
     print('MULTIPART $method Request: $url');
     print('MULTIPART Fields: $fields');
     if (files != null) {
       for (var file in files) {
-        print('MULTIPART File: ${file.field} - ${file.filename} (${file.length} bytes)');
+        print(
+          'MULTIPART File: ${file.field} - ${file.filename} (${file.length} bytes)',
+        );
       }
     }
-    
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 300));
+
+    final streamedResponse = await request.send().timeout(
+      const Duration(seconds: 300),
+    );
     final response = await http.Response.fromStream(streamedResponse);
-    
+
     print('MULTIPART Response Status: ${response.statusCode}');
     print('MULTIPART Response Body: ${response.body}');
     return response;
@@ -143,6 +167,8 @@ class ApiService {
   Future<http.Response> delete(String endpoint) async {
     final token = await getToken();
     final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http.delete(url, headers: _getHeaders(token)).timeout(const Duration(seconds: 60));
+    return await http
+        .delete(url, headers: _getHeaders(token))
+        .timeout(const Duration(seconds: 60));
   }
 }
