@@ -1,42 +1,31 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../models/project_model.dart';
 import '../../models/social_model.dart';
-import 'api_service.dart';
-import 'profile_service.dart';
 
 class ProjectService extends ChangeNotifier {
   static final ProjectService _instance = ProjectService._internal();
   factory ProjectService() => _instance;
   ProjectService._internal();
 
-  final ApiService _apiService = ApiService();
   List<Project> _projects = [];
   List<Project> _myRepos = [];
   List<Project> _pinnedProjects = [];
   List<Project> _savedProjects = [];
   List<Invitation> _invitations = [];
-  bool _isLoading = false; // used by fetchProjects (all projects feed)
+  bool _isLoading = false;
   bool _isMyReposLoading = false;
   bool _isSavedLoading = false;
   bool _isPinnedLoading = false;
 
   List<Project> get projects => _projects;
   List<Project> get myRepos => _myRepos;
-  bool get isSavedLoading => _isSavedLoading;
-  bool get isMyReposLoading => _isMyReposLoading;
-  bool get isPinnedLoading => _isPinnedLoading;
-
-  /// Returns the current user's pinned projects.
-  /// The API already filters to the current user, so no owner check needed.
   List<Project> get pinnedProjects => _pinnedProjects;
-
-  // Saved projects (pinned projects from other users)
   List<Project> get savedProjects => _savedProjects;
-
   List<Invitation> get invitations => _invitations;
   bool get isLoading => _isLoading;
+  bool get isMyReposLoading => _isMyReposLoading;
+  bool get isSavedLoading => _isSavedLoading;
+  bool get isPinnedLoading => _isPinnedLoading;
 
   Future<void> fetchProjects({String? search}) async {
     _isLoading = true;
@@ -110,21 +99,6 @@ class ProjectService extends ChangeNotifier {
         isLiked: true,
         isPinned: true,
       ),
-      Project(
-        id: 3,
-        owner: 1,
-        ownerName: 'jasim_dev',
-        projectName: 'Personal Budgeter',
-        slug: 'budgeter',
-        description: 'Track your expenses locally',
-        technology: 'Dart',
-        isPrivate: true,
-        collaboratorCount: '0',
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        likeCount: 12,
-        isLiked: false,
-        isPinned: false,
-      ),
     ];
 
     _isMyReposLoading = false;
@@ -134,10 +108,8 @@ class ProjectService extends ChangeNotifier {
   Future<void> fetchPinnedProjects() async {
     _isPinnedLoading = true;
     Future.microtask(() => notifyListeners());
-
     await Future.delayed(const Duration(milliseconds: 500));
     _pinnedProjects = _projects.where((p) => p.isPinned).toList();
-    
     _isPinnedLoading = false;
     notifyListeners();
   }
@@ -145,18 +117,13 @@ class ProjectService extends ChangeNotifier {
   Future<void> fetchSavedProjects() async {
     _isSavedLoading = true;
     Future.microtask(() => notifyListeners());
-
     await Future.delayed(const Duration(milliseconds: 500));
     _savedProjects = _projects.where((p) => p.isSaved).toList();
-
     _isSavedLoading = false;
     notifyListeners();
   }
 
-  Future<Map<String, dynamic>> createProject(
-    Map<String, String> data, {
-    List<http.MultipartFile>? files,
-  }) async {
+  Future<Map<String, dynamic>> createProject(Map<String, String> data, {List<dynamic>? files}) async {
     await Future.delayed(const Duration(seconds: 1));
     final newProject = Project(
       id: DateTime.now().millisecondsSinceEpoch,
@@ -184,38 +151,18 @@ class ProjectService extends ChangeNotifier {
     return true;
   }
 
-  Project getProjectById(int id, Project fallback) {
-    try {
-      return [..._projects, ..._myRepos, ..._pinnedProjects]
-          .firstWhere((p) => p.id == id);
-    } catch (_) {
-      return fallback;
-    }
-  }
-
   Future<bool> togglePin(int projectId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    void updateList(List<Project> list) {
-      final idx = list.indexWhere((p) => p.id == projectId);
-      if (idx != -1) {
-        list[idx] = list[idx].copyWith(isPinned: !list[idx].isPinned);
+    final idx = _projects.indexWhere((p) => p.id == projectId);
+    if (idx != -1) {
+      _projects[idx] = _projects[idx].copyWith(isPinned: !_projects[idx].isPinned);
+      if (_projects[idx].isPinned) {
+        if (!_pinnedProjects.any((p) => p.id == projectId)) _pinnedProjects.add(_projects[idx]);
+      } else {
+        _pinnedProjects.removeWhere((p) => p.id == projectId);
       }
+      notifyListeners();
     }
-
-    updateList(_projects);
-    updateList(_myRepos);
-    
-    final p = getProjectById(projectId, _projects[0]);
-    if (p.isPinned) {
-      if (!_pinnedProjects.any((item) => item.id == projectId)) {
-        _pinnedProjects.add(p);
-      }
-    } else {
-      _pinnedProjects.removeWhere((item) => item.id == projectId);
-    }
-
-    notifyListeners();
     return true;
   }
 
@@ -235,11 +182,6 @@ class ProjectService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> sendInvitation(int projectId, int receiverId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true;
-  }
-
   Future<bool> respondToInvitation(int id, String status) async {
     await Future.delayed(const Duration(milliseconds: 500));
     _invitations.removeWhere((i) => i.id == id);
@@ -249,107 +191,35 @@ class ProjectService extends ChangeNotifier {
 
   Future<bool> likeProject(int projectId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    void updateList(List<Project> list) {
-      final idx = list.indexWhere((p) => p.id == projectId);
-      if (idx != -1) {
-        final wasLiked = list[idx].isLiked;
-        list[idx] = list[idx].copyWith(
-          isLiked: !wasLiked,
-          likeCount: wasLiked ? list[idx].likeCount - 1 : list[idx].likeCount + 1,
-        );
-      }
+    final idx = _projects.indexWhere((p) => p.id == projectId);
+    if (idx != -1) {
+      final wasLiked = _projects[idx].isLiked;
+      _projects[idx] = _projects[idx].copyWith(
+        isLiked: !wasLiked,
+        likeCount: wasLiked ? _projects[idx].likeCount - 1 : _projects[idx].likeCount + 1,
+      );
+      notifyListeners();
     }
-    updateList(_projects);
-    updateList(_myRepos);
-    notifyListeners();
     return true;
   }
 
   Future<Project?> fetchProjectById(int id) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return getProjectById(id, _projects[0]);
-  }
-
-  Future<Project?> updateProjectById(int id, Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return null;
-  }
-
-  Future<Project?> partialUpdateProjectById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return null;
+    return _projects.firstWhere((p) => p.id == id, orElse: () => _projects.isNotEmpty ? _projects[0] : throw Exception('Not found'));
   }
 
   Future<bool> toggleSaveProject(int projectId) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    void updateList(List<Project> list) {
-      final idx = list.indexWhere((p) => p.id == projectId);
-      if (idx != -1) {
-        list[idx] = list[idx].copyWith(isSaved: !list[idx].isSaved);
+    final idx = _projects.indexWhere((p) => p.id == projectId);
+    if (idx != -1) {
+      _projects[idx] = _projects[idx].copyWith(isSaved: !_projects[idx].isSaved);
+      if (_projects[idx].isSaved) {
+        if (!_savedProjects.any((p) => p.id == projectId)) _savedProjects.add(_projects[idx]);
+      } else {
+        _savedProjects.removeWhere((p) => p.id == projectId);
       }
+      notifyListeners();
     }
-    updateList(_projects);
-    notifyListeners();
-    return true;
-  }
-
-  Future<bool> saveProject(int projectId) async {
-    return toggleSaveProject(projectId);
-  }
-
-  Future<void> fetchMySavedProjects() async {
-    _isSavedLoading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 500));
-    _savedProjects = _projects.where((p) => p.isSaved).toList();
-    _isSavedLoading = false;
-    notifyListeners();
-  }
-
-  Future<Invitation?> fetchInvitationById(int id) async {
-    return null;
-  }
-
-  Future<Invitation?> updateInvitationById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    return null;
-  }
-
-  Future<Invitation?> partialUpdateInvitationById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    return null;
-  }
-
-  Future<bool> deleteInvitationById(int id) async {
-    return true;
-  }
-
-  Future<bool> inviteUser(int projectId, int userId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true;
-  }
-
-  Future<bool> toggleInterested(int projectId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    void updateList(List<Project> list) {
-      final idx = list.indexWhere((p) => p.id == projectId);
-      if (idx != -1) {
-        final wasInt = list[idx].isInterested;
-        list[idx] = list[idx].copyWith(
-          isInterested: !wasInt,
-          interestedCount: wasInt ? list[idx].interestedCount - 1 : list[idx].interestedCount + 1,
-        );
-      }
-    }
-    updateList(_projects);
-    notifyListeners();
     return true;
   }
 
@@ -360,8 +230,6 @@ class ProjectService extends ChangeNotifier {
     _savedProjects = [];
     _invitations = [];
     _isLoading = false;
-    _isPinnedLoading = false;
-    _isMyReposLoading = false;
     notifyListeners();
   }
 }

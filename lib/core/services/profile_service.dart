@@ -1,16 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../models/profile_model.dart';
 import '../../models/social_model.dart';
-import 'api_service.dart';
 
 class ProfileService extends ChangeNotifier {
   static final ProfileService _instance = ProfileService._internal();
   factory ProfileService() => _instance;
   ProfileService._internal();
 
-  final ApiService _apiService = ApiService();
   Profile? _myProfile;
   List<Profile> _profiles = [];
   List<ConnectionRequest> _connections = [];
@@ -52,19 +48,6 @@ class ProfileService extends ChangeNotifier {
         followerCount: '450',
         repoCount: '23',
         connectionStatus: 'none',
-      ),
-      Profile(
-        id: 3,
-        user: 3,
-        username: 'bob_builder',
-        email: 'bob@example.com',
-        fullName: 'Bob Builder',
-        phone: '1122334455',
-        bio: 'Building the future',
-        profession: 'Architect',
-        followerCount: '300',
-        repoCount: '10',
-        connectionStatus: 'pending',
       ),
     ];
 
@@ -117,10 +100,7 @@ class ProfileService extends ChangeNotifier {
     );
   }
 
-  Future<bool> updateProfile(
-    Map<String, dynamic> data, {
-    http.MultipartFile? profilePic,
-  }) async {
+  Future<bool> updateProfile(Map<String, dynamic> data, {dynamic profilePic}) async {
     await Future.delayed(const Duration(seconds: 1));
     if (_myProfile != null) {
       _myProfile = _myProfile!.copyWith(
@@ -192,10 +172,7 @@ class ProfileService extends ChangeNotifier {
     return null;
   }
 
-  Future<Profile?> partialUpdateProfileById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
+  Future<Profile?> partialUpdateProfileById(int id, Map<String, dynamic> data) async {
     await Future.delayed(const Duration(seconds: 1));
     return null;
   }
@@ -213,28 +190,6 @@ class ProfileService extends ChangeNotifier {
   Future<List<Profile>> fetchTaggableUsers() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return _profiles;
-  }
-
-  Future<ConnectionRequest?> fetchConnectionById(int id) async {
-    return null;
-  }
-
-  Future<ConnectionRequest?> updateConnectionById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    return null;
-  }
-
-  Future<ConnectionRequest?> partialUpdateConnectionById(
-    int id,
-    Map<String, dynamic> data,
-  ) async {
-    return null;
-  }
-
-  Future<bool> deleteConnectionById(int id) async {
-    return true;
   }
 
   void clear() {

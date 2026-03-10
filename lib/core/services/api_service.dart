@@ -80,4 +80,3 @@ class ApiService {
     return _mockNetworkCall();
   }
 }
-}

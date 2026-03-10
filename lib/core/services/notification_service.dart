@@ -1,14 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../models/notification_model.dart';
-import 'api_service.dart';
 
 class NotificationService extends ChangeNotifier {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final ApiService _apiService = ApiService();
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
 
@@ -23,24 +20,19 @@ class NotificationService extends ChangeNotifier {
     _notifications = [
       NotificationModel(
         id: 1,
-        sender: 2,
         senderName: 'Alice Smith',
-        receiver: 1,
-        status: 'LIKE',
-        post: 1,
-        message: 'Alice Smith liked your post',
+        message: 'followed you',
+        status: 'FOLLOW',
+        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
         isRead: false,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
       ),
       NotificationModel(
         id: 2,
-        sender: 3,
         senderName: 'Bob Builder',
-        receiver: 1,
-        status: 'FOLLOW',
-        message: 'Bob Builder started following you',
+        message: 'liked your post',
+        status: 'LIKE',
+        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
         isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       ),
     ];
 
@@ -49,21 +41,15 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> markAsRead(int id) async {
-    await Future.delayed(const Duration(milliseconds: 200));
     final index = _notifications.indexWhere((n) => n.id == id);
     if (index != -1) {
       _notifications[index] = NotificationModel(
         id: _notifications[index].id,
-        sender: _notifications[index].sender,
         senderName: _notifications[index].senderName,
-        receiver: _notifications[index].receiver,
-        status: _notifications[index].status,
-        post: _notifications[index].post,
-        project: _notifications[index].project,
         message: _notifications[index].message,
-        senderProfilePic: _notifications[index].senderProfilePic,
-        isRead: true,
+        status: _notifications[index].status,
         createdAt: _notifications[index].createdAt,
+        isRead: true,
       );
       notifyListeners();
     }
@@ -76,7 +62,6 @@ class NotificationService extends ChangeNotifier {
     int? projectId,
     required String message,
   }) async {
-    // Mock sending notification
     await Future.delayed(const Duration(milliseconds: 200));
   }
 

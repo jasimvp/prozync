@@ -1,15 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:prozync/models/chat_model.dart';
-import 'package:prozync/core/services/profile_service.dart';
-import 'api_service.dart';
 
 class ChatService extends ChangeNotifier {
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
   ChatService._internal();
 
-  final ApiService _apiService = ApiService();
   List<ChatPreview> _chats = [];
   List<Message> _currentMessages = [];
   bool _isLoading = false;
@@ -89,7 +85,6 @@ class ChatService extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
-    
     markConversationAsRead(otherUserId);
   }
 
@@ -163,44 +158,6 @@ class ChatService extends ChangeNotifier {
       }
     }
     notifyListeners();
-  }
-
-  Future<Message?> fetchMessageById(int id) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    return _currentMessages.firstWhere((msg) => msg.id == id, orElse: () => throw Exception('Not found'));
-  }
-
-  Future<Message?> updateMessageById(int id, Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    final index = _currentMessages.indexWhere((msg) => msg.id == id);
-    if (index != -1) {
-      final original = _currentMessages[index];
-      _currentMessages[index] = Message(
-        id: original.id,
-        senderId: original.senderId,
-        senderName: original.senderName,
-        receiverId: original.receiverId,
-        receiverName: original.receiverName,
-        text: data['text'] as String? ?? original.text,
-        isRead: data['is_read'] as bool? ?? original.isRead,
-        createdAt: original.createdAt,
-        isMe: original.isMe,
-      );
-      notifyListeners();
-      return _currentMessages[index];
-    }
-    return null;
-  }
-
-  Future<Message?> partialUpdateMessageById(int id, Map<String, dynamic> data) async {
-    return updateMessageById(id, data);
-  }
-
-  Future<bool> deleteMessageById(int id) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    _currentMessages.removeWhere((msg) => msg.id == id);
-    notifyListeners();
-    return true;
   }
 
   Future<List<Message>> fetchConversation(int otherUserId) async {

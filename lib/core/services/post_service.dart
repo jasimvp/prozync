@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
 import 'api_service.dart';
-import 'profile_service.dart';
 
 class PostService extends ChangeNotifier {
   static final PostService _instance = PostService._internal();
   factory PostService() => _instance;
   PostService._internal();
 
-  final ApiService _apiService = ApiService();
   List<Post> _posts = [];
   List<Post> _savedPosts = [];
   List<Comment> _comments = [];
@@ -77,7 +75,7 @@ class PostService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> createPost(
+  Future<Map<String, dynamic>> createPost(
     String content, {
     int? projectId,
     http.MultipartFile? imageFile,
@@ -96,7 +94,7 @@ class PostService extends ChangeNotifier {
     );
     _posts.insert(0, newPost);
     notifyListeners();
-    return true;
+    return {'success': true, 'post': newPost};
   }
 
   Future<bool> likePost(int postId) async {
@@ -151,6 +149,7 @@ class PostService extends ChangeNotifier {
         id: 1,
         user: 2,
         username: 'alice_smith',
+        fullName: 'Alice Smith',
         content: 'Wow, this looks amazing!',
         post: postId,
         createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
@@ -159,6 +158,7 @@ class PostService extends ChangeNotifier {
         id: 2,
         user: 3,
         username: 'bob_builder',
+        fullName: 'Bob Builder',
         content: 'Great work dev!',
         post: postId,
         createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
@@ -176,13 +176,13 @@ class PostService extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch,
       user: 1,
       username: 'jasim_dev',
+      fullName: 'Jasim VP',
       post: postId,
       content: content,
       createdAt: DateTime.now(),
     );
     _comments.add(newComment);
     
-    // Update comment count in post
     final idx = _posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       _posts[idx] = _posts[idx].copyWith(commentCount: _posts[idx].commentCount + 1);
