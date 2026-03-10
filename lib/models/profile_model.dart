@@ -11,6 +11,7 @@ class Profile {
   final String profession;
   final String? profilePic;
   final String followerCount;
+  final String followingCount;
   final String repoCount;
   final String connectionStatus;
 
@@ -25,6 +26,7 @@ class Profile {
     required this.profession,
     this.profilePic,
     required this.followerCount,
+    required this.followingCount,
     required this.repoCount,
     required this.connectionStatus,
   });
@@ -65,6 +67,7 @@ class Profile {
       profession: json['profession'] ?? '',
       profilePic: json['profile_pic'],
       followerCount: (json['follower_count'] ?? 0).toString(),
+      followingCount: (json['following_count'] ?? 0).toString(),
       repoCount: (json['repo_count'] ?? 0).toString(),
       connectionStatus: status,
     );
@@ -81,6 +84,7 @@ class Profile {
     String? profession,
     String? profilePic,
     String? followerCount,
+    String? followingCount,
     String? repoCount,
     String? connectionStatus,
   }) {
@@ -95,6 +99,7 @@ class Profile {
       profession: profession ?? this.profession,
       profilePic: profilePic ?? this.profilePic,
       followerCount: followerCount ?? this.followerCount,
+      followingCount: followingCount ?? this.followingCount,
       repoCount: repoCount ?? this.repoCount,
       connectionStatus: connectionStatus ?? this.connectionStatus,
     );
@@ -112,6 +117,7 @@ class Profile {
       'profession': profession,
       'profile_pic': profilePic,
       'follower_count': int.tryParse(followerCount) ?? 0,
+      'following_count': int.tryParse(followingCount) ?? 0,
       'repo_count': int.tryParse(repoCount) ?? 0,
       'connection_status': connectionStatus,
     };

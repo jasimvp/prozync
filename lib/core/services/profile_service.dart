@@ -83,12 +83,27 @@ class ProfileService extends ChangeNotifier {
 
   Future<Profile?> fetchProfileById(String id) async {
     try {
+      final user = _auth.currentUser;
       final doc = await _firestore.collection('users').doc(id).get();
+
       if (doc.exists) {
-        return Profile.fromJson({
+        Map<String, dynamic> data = {
           ...doc.data() as Map<String, dynamic>,
           'id': doc.id,
-        });
+        };
+
+        if (user != null) {
+          final followDoc = await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('following')
+              .doc(id)
+              .get();
+          data['is_following'] = followDoc.exists;
+          data['connection_status'] = followDoc.exists ? 'following' : '';
+        }
+
+        return Profile.fromJson(data);
       }
     } catch (e) {
       debugPrint('Error fetching profile $id: $e');
@@ -150,6 +165,7 @@ class ProfileService extends ChangeNotifier {
           'follower_count': FieldValue.increment(-1),
         });
 
+        await fetchMyProfile();
         return 'Unfollowed';
       } else {
         // Follow
@@ -169,7 +185,6 @@ class ProfileService extends ChangeNotifier {
           'follower_count': FieldValue.increment(1),
         });
 
-        // Send Notification
         await _firestore
             .collection('users')
             .doc(targetId)
@@ -184,6 +199,7 @@ class ProfileService extends ChangeNotifier {
               'read': false,
             });
 
+        await fetchMyProfile();
         return 'Followed';
       }
     } catch (e) {
@@ -192,16 +208,50 @@ class ProfileService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchConnections() async {
-    // Implement if needed for social connections
+  Future<List<Profile>> getFollowers(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('followers')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      List<Profile> followers = [];
+      for (var doc in snapshot.docs) {
+        final profile = await fetchProfileById(doc.id);
+        if (profile != null) {
+          followers.add(profile);
+        }
+      }
+      return followers;
+    } catch (e) {
+      debugPrint('Error fetching followers: $e');
+      return [];
+    }
   }
 
-  Future<bool> sendConnectionRequest(String receiverId) async {
-    return true;
-  }
+  Future<List<Profile>> getFollowing(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('following')
+          .orderBy('timestamp', descending: true)
+          .get();
 
-  Future<bool> respondToConnection(int id, String status) async {
-    return true;
+      List<Profile> following = [];
+      for (var doc in snapshot.docs) {
+        final profile = await fetchProfileById(doc.id);
+        if (profile != null) {
+          following.add(profile);
+        }
+      }
+      return following;
+    } catch (e) {
+      debugPrint('Error fetching following: $e');
+      return [];
+    }
   }
 
   void clear() {

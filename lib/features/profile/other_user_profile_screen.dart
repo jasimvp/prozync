@@ -8,6 +8,7 @@ import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/core/services/project_service.dart';
 import 'package:prozync/widgets/mention_text.dart';
+import 'package:prozync/features/profile/follow_list_screen.dart';
 
 class OtherUserProfileScreen extends StatefulWidget {
   final Profile profile;
@@ -321,10 +322,8 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Widget _buildStatsRow(BuildContext context) {
     int totalStars = 0;
-    int totalCollabs = 0;
     for (final p in userProjects) {
       totalStars += p.likeCount;
-      totalCollabs += int.tryParse(p.collaboratorCount) ?? 0;
     }
 
     return Container(
@@ -356,15 +355,43 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               context,
               _currentProfile.followerCount,
               'Followers',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FollowListScreen(
+                      userId: _currentProfile.id,
+                      title: 'Followers',
+                      isFollowers: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          _buildVerticalDivider(),
+          Expanded(
+            child: _buildStatItem(
+              context,
+              _currentProfile.followingCount,
+              'Following',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FollowListScreen(
+                      userId: _currentProfile.id,
+                      title: 'Following',
+                      isFollowers: false,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           _buildVerticalDivider(),
           Expanded(
             child: _buildStatItem(context, totalStars.toString(), 'Stars'),
-          ),
-          _buildVerticalDivider(),
-          Expanded(
-            child: _buildStatItem(context, totalCollabs.toString(), 'Collabs'),
           ),
         ],
       ),
@@ -375,23 +402,32 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.2));
   }
 
-  Widget _buildStatItem(BuildContext context, String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+  Widget _buildStatItem(
+    BuildContext context,
+    String value,
+    String label, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
