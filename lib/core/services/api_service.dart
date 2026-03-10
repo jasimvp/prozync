@@ -29,9 +29,8 @@ class ApiService {
       'Accept': 'application/json',
     };
     if (token != null) {
-      // Backend uses Bearer auth (see Swagger schema), so send the token
-      // in the standard Authorization header format.
-      headers['Authorization'] = 'Bearer $token';
+      // Backend uses DRF-style token auth: "Token <key>"
+      headers['Authorization'] = 'Token $token';
     }
     return headers;
   }
@@ -136,7 +135,7 @@ class ApiService {
 
     request.headers.addAll({
       'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
+      if (token != null) 'Authorization': 'Token $token',
     });
 
     request.fields.addAll(fields);

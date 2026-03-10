@@ -461,9 +461,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                             .createPost(
                                               controller.text,
                                               imageFile: imageFile,
-                                              userId: ProfileService()
-                                                  .myProfile
-                                                  ?.id,
                                             );
 
                                         if (mounted) {
