@@ -202,7 +202,12 @@ class PostService extends ChangeNotifier {
             .where(FieldPath.documentId, whereIn: postIds)
             .get();
         _savedPosts = postsSnapshot.docs
-            .map((doc) => Post.fromJson({...doc.data()!, 'id': doc.id}))
+            .map(
+              (doc) => Post.fromJson({
+                ...doc.data() as Map<String, dynamic>,
+                'id': doc.id,
+              }),
+            )
             .toList();
       }
 
@@ -224,7 +229,12 @@ class PostService extends ChangeNotifier {
           .orderBy('created_at', descending: true)
           .get();
       final comments = snapshot.docs
-          .map((doc) => Comment.fromJson({...doc.data()!, 'id': doc.id}))
+          .map(
+            (doc) => Comment.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
+          )
           .toList();
       _comments = comments;
       notifyListeners();
@@ -279,7 +289,10 @@ class PostService extends ChangeNotifier {
     try {
       final doc = await _firestore.collection('posts').doc(id).get();
       if (doc.exists) {
-        return Post.fromJson({...doc.data()!, 'id': doc.id});
+        return Post.fromJson({
+          ...doc.data() as Map<String, dynamic>,
+          'id': doc.id,
+        });
       }
     } catch (e) {
       debugPrint('Error fetching post by id: $e');

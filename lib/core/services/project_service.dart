@@ -41,9 +41,10 @@ class ProjectService extends ChangeNotifier {
             .where('project_name', isLessThanOrEqualTo: '$search\uf8ff');
       }
       final snapshot = await query.get();
-      _projects = snapshot.docs
-          .map((doc) => Project.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      _projects = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -63,9 +64,10 @@ class ProjectService extends ChangeNotifier {
           .collection('projects')
           .where('owner_id', isEqualTo: _auth.currentUser!.uid)
           .get();
-      _myRepos = snapshot.docs
-          .map((doc) => Project.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      _myRepos = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
       _isMyReposLoading = false;
       notifyListeners();
     } catch (e) {
@@ -100,9 +102,10 @@ class ProjectService extends ChangeNotifier {
           .where('id', whereIn: projectIds)
           .get();
 
-      _pinnedProjects = projectsSnapshot.docs
-          .map((doc) => Project.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      _pinnedProjects = projectsSnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
       _isPinnedLoading = false;
       notifyListeners();
     } catch (e) {
@@ -137,9 +140,10 @@ class ProjectService extends ChangeNotifier {
           .where('id', whereIn: projectIds)
           .get();
 
-      _savedProjects = projectsSnapshot.docs
-          .map((doc) => Project.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      _savedProjects = projectsSnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
       _isSavedLoading = false;
       notifyListeners();
     } catch (e) {
@@ -155,9 +159,10 @@ class ProjectService extends ChangeNotifier {
           .collection('projects')
           .where('owner_id', isEqualTo: uid)
           .get();
-      return snapshot.docs
-          .map((doc) => Project.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
     } catch (e) {
       debugPrint('Error fetching user projects: $e');
       return [];
@@ -357,7 +362,10 @@ class ProjectService extends ChangeNotifier {
   Future<Project?> fetchProjectById(String id) async {
     final doc = await _firestore.collection('projects').doc(id).get();
     if (doc.exists) {
-      return Project.fromJson(doc.data() as Map<String, dynamic>);
+      return Project.fromJson({
+        ...doc.data() as Map<String, dynamic>,
+        'id': doc.id,
+      });
     }
     return null;
   }

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/notification_model.dart';
 
 class NotificationService extends ChangeNotifier {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
@@ -13,56 +18,99 @@ class NotificationService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchNotifications() async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    _notifications = [
-      NotificationModel(
-        id: 1,
-        senderName: 'Alice Smith',
-        message: 'followed you',
-        status: 'FOLLOW',
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 2,
-        senderName: 'Bob Builder',
-        message: 'liked your post',
-        status: 'LIKE',
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        isRead: true,
-      ),
-    ];
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-    _isLoading = false;
-    notifyListeners();
-  }
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .get();
 
-  Future<void> markAsRead(int id) async {
-    final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      _notifications[index] = NotificationModel(
-        id: _notifications[index].id,
-        senderName: _notifications[index].senderName,
-        message: _notifications[index].message,
-        status: _notifications[index].status,
-        createdAt: _notifications[index].createdAt,
-        isRead: true,
-      );
+      _notifications = snapshot.docs.map((doc) {
+        return NotificationModel.fromJson({
+          ...doc.data() as Map<String, dynamic>,
+          'id': doc.id,
+        });
+      }).toList();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching notifications: $e');
       notifyListeners();
     }
   }
 
+  Future<void> markAsRead(String id) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .doc(id)
+          .update({'read': true});
+
+      final index = _notifications.indexWhere((n) => n.id == id);
+      if (index != -1) {
+        _notifications[index] = NotificationModel(
+          id: _notifications[index].id,
+          sender: _notifications[index].sender,
+          senderName: _notifications[index].senderName,
+          receiver: _notifications[index].receiver,
+          status: _notifications[index].status,
+          createdAt: _notifications[index].createdAt,
+          message: _notifications[index].message,
+          isRead: true,
+          post: _notifications[index].post,
+          project: _notifications[index].project,
+          senderProfilePic: _notifications[index].senderProfilePic,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error marking notification as read: $e');
+    }
+  }
+
   Future<void> sendNotification({
-    required int receiverId,
+    required String receiverId,
     required String status,
-    int? postId,
-    int? projectId,
+    String? postId,
+    String? projectId,
     required String message,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('notifications')
+          .add({
+            'type': status,
+            'from_uid': user.uid,
+            'from_name': user.displayName ?? 'Someone',
+            'message': message,
+            'post_id': postId,
+            'project_id': projectId,
+            'timestamp': FieldValue.serverTimestamp(),
+            'read': false,
+          });
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+    }
   }
 
   void clear() {

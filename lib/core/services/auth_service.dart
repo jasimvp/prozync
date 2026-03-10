@@ -25,8 +25,14 @@ class AuthService {
         password: data['password'],
       );
 
+      // Update display name in Firebase Auth
+      await result.user!.updateDisplayName(
+        data['full_name'] ?? data['username'],
+      );
+
       // Create user profile in Firestore
       await _firestore.collection('users').doc(result.user!.uid).set({
+        'id': result.user!.uid, // Use id for consistency
         'uid': result.user!.uid,
         'email': data['email'],
         'username': data['username'] ?? data['email'].split('@')[0],

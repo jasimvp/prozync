@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
+import 'package:prozync/core/services/cloudinary_service.dart';
 import 'package:prozync/features/profile/settings_screen.dart';
 import 'package:prozync/features/profile/saved_posts_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
@@ -277,8 +277,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _buildVerticalDivider(),
               Expanded(
-                child:
-                    _buildStatItem(context, profile.followerCount, 'Followers'),
+                child: _buildStatItem(
+                  context,
+                  profile.followerCount,
+                  'Followers',
+                ),
               ),
               _buildVerticalDivider(),
               Expanded(
@@ -286,8 +289,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _buildVerticalDivider(),
               Expanded(
-                child:
-                    _buildStatItem(context, totalCollabs.toString(), 'Collabs'),
+                child: _buildStatItem(
+                  context,
+                  totalCollabs.toString(),
+                  'Collabs',
+                ),
               ),
             ],
           ),
@@ -678,7 +684,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           as ImageProvider
                                     : NetworkImage(profile.fullProfilePic),
                                 onBackgroundImageError: (exception, stackTrace) {
-                                  debugPrint('Error loading profile pic in edit: $exception');
+                                  debugPrint(
+                                    'Error loading profile pic in edit: $exception',
+                                  );
                                 },
                               ),
                               Positioned(
@@ -756,34 +764,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : () async {
                                     setModalState(() => isSaving = true);
 
-                                    http.MultipartFile? profilePicFile;
+                                    String? profilePicUrl;
                                     if (selectedImage != null) {
+                                      final cloudinary = CloudinaryService();
                                       if (kIsWeb) {
                                         final bytes = await selectedImage!
                                             .readAsBytes();
-                                        profilePicFile =
-                                            http.MultipartFile.fromBytes(
-                                              'profile_pic',
+                                        profilePicUrl = await cloudinary
+                                            .uploadImage(
                                               bytes,
-                                              filename: selectedImage!.name,
+                                              folder: 'profiles',
                                             );
                                       } else {
-                                        profilePicFile =
-                                            await http.MultipartFile.fromPath(
-                                              'profile_pic',
-                                              selectedImage!.path,
+                                        profilePicUrl = await cloudinary
+                                            .uploadImage(
+                                              File(selectedImage!.path),
+                                              folder: 'profiles',
                                             );
                                       }
                                     }
 
                                     final success = await _profileService
                                         .updateProfile({
-                                          'full_name': nameController.text,
-                                          'profession':
-                                              professionController.text,
-                                          'bio': bioController.text,
-                                          'phone': phoneController.text,
-                                        }, profilePic: profilePicFile);
+                                          'full_name': nameController.text
+                                              .trim(),
+                                          'profession': professionController
+                                              .text
+                                              .trim(),
+                                          'bio': bioController.text.trim(),
+                                          'phone': phoneController.text.trim(),
+                                        }, profilePic: profilePicUrl);
 
                                     if (mounted) {
                                       Navigator.pop(context);

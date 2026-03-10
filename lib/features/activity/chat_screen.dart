@@ -4,7 +4,7 @@ import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/models/chat_model.dart';
 
 class ChatScreen extends StatefulWidget {
-  final int chatId;
+  final String chatId; // This is the other user's ID
   final String userName;
   final String userImage;
 
@@ -27,9 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _chatService.fetchMessages(widget.chatId).then((_) {
-      _chatService.markConversationAsRead(widget.chatId);
-    });
+    _chatService.markConversationAsRead(widget.chatId);
   }
 
   void _sendMessage() async {
@@ -40,16 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (success) {
       _messageController.clear();
-      // Auto scroll to bottom
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      // Auto scroll to bottom handled by StreamBuilder/ListView
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,75 +52,106 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _chatService,
-      builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(
-            titleSpacing: 0,
-            title: Row(
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(widget.userImage),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundImage: NetworkImage(widget.userImage),
+                Text(
+                  widget.userName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.userName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Text(
-                      'Online',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Online',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.videocam_outlined),
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.call_outlined),
-              ),
-              const SizedBox(width: 8),
-            ],
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.videocam_outlined),
           ),
-          body: Column(
-            children: [
-              Expanded(
-                child:
-                    _chatService.isLoading &&
-                        _chatService.currentMessages.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(20),
-                        itemCount: _chatService.currentMessages.length,
-                        itemBuilder: (context, index) {
-                          final message = _chatService.currentMessages[index];
-                          return _buildMessageBubble(message);
-                        },
-                      ),
-              ),
-              _buildMessageInput(),
-            ],
+          IconButton(onPressed: () {}, icon: const Icon(Icons.call_outlined)),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<Message>>(
+              stream: _chatService.getMessagesStream(widget.chatId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final messages = snapshot.data ?? [];
+
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No messages yet',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Scroll to bottom on new messages
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(
+                      _scrollController.position.maxScrollExtent,
+                    );
+                  }
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(20),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    return _buildMessageBubble(message);
+                  },
+                );
+              },
+            ),
           ),
-        );
-      },
+          _buildMessageInput(),
+        ],
+      ),
     );
   }
 

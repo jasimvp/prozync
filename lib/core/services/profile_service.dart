@@ -64,7 +64,10 @@ class ProfileService extends ChangeNotifier {
 
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
-        _myProfile = Profile.fromJson({...doc.data()!, 'id': doc.id});
+        _myProfile = Profile.fromJson({
+          ...doc.data() as Map<String, dynamic>,
+          'id': doc.id,
+        });
       }
 
       _isLoading = false;
@@ -82,7 +85,10 @@ class ProfileService extends ChangeNotifier {
     try {
       final doc = await _firestore.collection('users').doc(id).get();
       if (doc.exists) {
-        return Profile.fromJson({...doc.data()!, 'id': doc.id});
+        return Profile.fromJson({
+          ...doc.data() as Map<String, dynamic>,
+          'id': doc.id,
+        });
       }
     } catch (e) {
       debugPrint('Error fetching profile $id: $e');

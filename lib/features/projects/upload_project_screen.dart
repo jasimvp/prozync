@@ -114,7 +114,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
           'description': _descController.text.trim(),
           'technology': _techController.text.trim(),
           'readme': _readmeController.text.trim(),
-          'is_private': _isPrivate.toString(),
+          'is_private': _isPrivate,
         },
         coverImageUrl: coverImageUrl,
         zipUrl: zipUrl,
