@@ -61,7 +61,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   Future<void> _loadUserProjects() async {
     try {
       final projects = await ProjectService().getUserProjects(
-        widget.profile.username,
+        widget.profile.id,
       );
       if (mounted) {
         setState(() {

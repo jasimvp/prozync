@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/profile_model.dart';
 import '../../models/social_model.dart';
 
@@ -6,6 +8,9 @@ class ProfileService extends ChangeNotifier {
   static final ProfileService _instance = ProfileService._internal();
   factory ProfileService() => _instance;
   ProfileService._internal();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Profile? _myProfile;
   List<Profile> _profiles = [];
@@ -18,195 +23,179 @@ class ProfileService extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchProfiles({String? search}) async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    _profiles = [
-      Profile(
-        id: '1',
-        user: '1',
-        username: 'jasim_dev',
-        email: 'jasim@example.com',
-        fullName: 'Jasim VP',
-        phone: '1234567890',
-        bio: 'Flutter Developer | UI Enthusiast',
-        profession: 'Software Engineer',
-        followerCount: '120',
-        repoCount: '15',
-        connectionStatus: 'following',
-      ),
-      Profile(
-        id: '2',
-        user: '2',
-        username: 'alice_smith',
-        email: 'alice@example.com',
-        fullName: 'Alice Smith',
-        phone: '0987654321',
-        bio: 'Backend Specialist',
-        profession: 'Developer',
-        followerCount: '450',
-        repoCount: '23',
-        connectionStatus: 'none',
-      ),
-    ];
+      Query query = _firestore.collection('users');
 
-    if (search != null && search.isNotEmpty) {
-      _profiles = _profiles
-          .where(
-            (p) =>
-                p.username.toLowerCase().contains(search.toLowerCase()) ||
-                p.fullName.toLowerCase().contains(search.toLowerCase()),
+      if (search != null && search.isNotEmpty) {
+        query = query
+            .where('username', isGreaterThanOrEqualTo: search)
+            .where('username', isLessThanOrEqualTo: '$search\uf8ff');
+      }
+
+      final snapshot = await query.limit(20).get();
+      _profiles = snapshot.docs
+          .map(
+            (doc) => Profile.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
           )
           .toList();
-    }
 
-    _isLoading = false;
-    notifyListeners();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching profiles: $e');
+      notifyListeners();
+    }
   }
 
   Future<bool> fetchMyProfile() async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
+    final user = _auth.currentUser;
+    if (user == null) return false;
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    _myProfile = Profile(
-      id: '1',
-      user: '1',
-      username: 'jasim_dev',
-      email: 'jasim@example.com',
-      fullName: 'Jasim VP',
-      phone: '1234567890',
-      bio: 'Flutter Developer | UI Enthusiast',
-      profession: 'Software Engineer',
-      followerCount: '120',
-      repoCount: '15',
-      connectionStatus: 'following',
-    );
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-    _isLoading = false;
-    notifyListeners();
-    return true;
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        _myProfile = Profile.fromJson({...doc.data()!, 'id': doc.id});
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching my profile: $e');
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<Profile?> fetchProfileById(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return Profile(
-      id: id,
-      user: id,
-      username: 'user_$id',
-      email: 'user$id@example.com',
-      fullName: 'User $id',
-      phone: '1234567890',
-      bio: 'Hello from mock user $id',
-      profession: 'Developer',
-      followerCount: '100',
-      repoCount: '5',
-      connectionStatus: 'none',
-    );
+    try {
+      final doc = await _firestore.collection('users').doc(id).get();
+      if (doc.exists) {
+        return Profile.fromJson({...doc.data()!, 'id': doc.id});
+      }
+    } catch (e) {
+      debugPrint('Error fetching profile $id: $e');
+    }
+    return null;
   }
 
   Future<bool> updateProfile(
     Map<String, dynamic> data, {
     dynamic profilePic,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
-    if (_myProfile != null) {
-      _myProfile = _myProfile!.copyWith(
-        fullName: data['full_name']?.toString(),
-        phone: data['phone']?.toString(),
-        bio: data['bio']?.toString(),
-        profession: data['profession']?.toString(),
-      );
-      notifyListeners();
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'full_name': data['full_name'],
+        'phone': data['phone'],
+        'bio': data['bio'],
+        'profession': data['profession'],
+        if (profilePic != null) 'profile_pic': profilePic,
+      });
+
+      await fetchMyProfile();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      return false;
     }
-    return true;
   }
 
-  Future<String?> followProfile(String id) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final index = _profiles.indexWhere((p) => p.id == id);
-    if (index != -1) {
-      final isFollowing = _profiles[index].connectionStatus == 'following';
-      _profiles[index] = _profiles[index].copyWith(
-        connectionStatus: isFollowing ? 'none' : 'following',
-        followerCount:
-            (int.parse(_profiles[index].followerCount) + (isFollowing ? -1 : 1))
-                .toString(),
-      );
-      notifyListeners();
-      return isFollowing ? 'Unfollowed' : 'Following';
+  Future<String?> followProfile(String targetId) async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    try {
+      final myRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('following')
+          .doc(targetId);
+      final targetRef = _firestore
+          .collection('users')
+          .doc(targetId)
+          .collection('followers')
+          .doc(user.uid);
+
+      final doc = await myRef.get();
+
+      if (doc.exists) {
+        // Unfollow
+        await myRef.delete();
+        await targetRef.delete();
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'following_count': FieldValue.increment(-1),
+        });
+        await _firestore.collection('users').doc(targetId).update({
+          'follower_count': FieldValue.increment(-1),
+        });
+
+        return 'Unfollowed';
+      } else {
+        // Follow
+        await myRef.set({
+          'uid': targetId,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        await targetRef.set({
+          'uid': user.uid,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'following_count': FieldValue.increment(1),
+        });
+        await _firestore.collection('users').doc(targetId).update({
+          'follower_count': FieldValue.increment(1),
+        });
+
+        // Send Notification
+        await _firestore
+            .collection('users')
+            .doc(targetId)
+            .collection('notifications')
+            .add({
+              'type': 'follow',
+              'from_uid': user.uid,
+              'from_name': user.displayName ?? 'Someone',
+              'message':
+                  '${user.displayName ?? 'Someone'} started following you',
+              'timestamp': FieldValue.serverTimestamp(),
+              'read': false,
+            });
+
+        return 'Followed';
+      }
+    } catch (e) {
+      debugPrint('Error following profile: $e');
+      return null;
     }
-    return 'Success';
   }
 
   Future<void> fetchConnections() async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    _connections = [
-      ConnectionRequest(
-        id: 1,
-        sender: 2,
-        senderName: 'Alice Smith',
-        receiver: 1,
-        receiverName: 'Jasim VP',
-        status: 'PENDING',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
-
-    _isLoading = false;
-    notifyListeners();
+    // Implement if needed for social connections
   }
 
   Future<bool> sendConnectionRequest(String receiverId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
     return true;
   }
 
   Future<bool> respondToConnection(int id, String status) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _connections.removeWhere((c) => c.id == id);
-    notifyListeners();
     return true;
-  }
-
-  Future<Profile?> createProfile(Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return Profile.fromJson(data);
-  }
-
-  Future<Profile?> updateProfileById(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return null;
-  }
-
-  Future<Profile?> partialUpdateProfileById(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return null;
-  }
-
-  Future<bool> deleteProfileById(String id) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
-  }
-
-  Future<bool> connectWithProfile(String id) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true;
-  }
-
-  Future<List<Profile>> fetchTaggableUsers() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return _profiles;
   }
 
   void clear() {

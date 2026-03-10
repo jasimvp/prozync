@@ -14,25 +14,24 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   void _handleLogin() async {
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter username and password')),
+        const SnackBar(content: Text('Please enter email and password')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // API expects username, using email as username for now as per common pattern
     final result = await _authService.login(
-      _usernameController.text.trim(),
+      _emailController.text.trim(),
       _passwordController.text.trim(),
     );
 
@@ -61,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -101,13 +100,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Spacer(flex: 3),
                       Center(
                         child: TextFormField(
-                          controller: _usernameController,
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
-                            labelText: 'Username',
-                            helperText:
-                                'Use the username you created during signup',
+                            labelText: 'Email',
+                            helperText: 'Enter your registered email address',
                             prefixIcon: Icon(
-                              Icons.person_outline,
+                              Icons.email_outlined,
                               color: Colors.blue[900],
                             ),
                             border: OutlineInputBorder(

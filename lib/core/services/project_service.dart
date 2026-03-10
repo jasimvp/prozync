@@ -279,7 +279,71 @@ class ProjectService extends ChangeNotifier {
   }
 
   Future<bool> toggleInterested(String projectId) async {
-    return true;
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      final projectDoc = await _firestore
+          .collection('projects')
+          .doc(projectId)
+          .get();
+      if (!projectDoc.exists) return false;
+
+      final projectData = projectDoc.data()!;
+      final ownerId = projectData['owner_id'] ?? projectData['owner'] ?? '';
+      final projectName = projectData['project_name'] ?? 'Project';
+
+      if (ownerId == user.uid)
+        return false; // Cannot be interested in own project
+
+      final interestRef = _firestore
+          .collection('projects')
+          .doc(projectId)
+          .collection('interested_users')
+          .doc(user.uid);
+
+      final interestDoc = await interestRef.get();
+
+      if (interestDoc.exists) {
+        await interestRef.delete();
+        await _firestore.collection('projects').doc(projectId).update({
+          'interested_count': FieldValue.increment(-1),
+        });
+        return true;
+      } else {
+        await interestRef.set({
+          'uid': user.uid,
+          'timestamp': FieldValue.serverTimestamp(),
+          'username': user.displayName ?? 'Interested User',
+        });
+
+        await _firestore.collection('projects').doc(projectId).update({
+          'interested_count': FieldValue.increment(1),
+        });
+
+        // Send Notification to project owner
+        await _firestore
+            .collection('users')
+            .doc(ownerId)
+            .collection('notifications')
+            .add({
+              'type': 'interest',
+              'from_uid': user.uid,
+              'from_name': user.displayName ?? 'Someone',
+              'project_id': projectId,
+              'project_name': projectName,
+              'message':
+                  '${user.displayName ?? 'Someone'} is interested to collab with $projectName',
+              'timestamp': FieldValue.serverTimestamp(),
+              'read': false,
+            });
+
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error toggling interest: $e');
+      return false;
+    }
   }
 
   Future<bool> inviteUser(String projectId, String userId) async {

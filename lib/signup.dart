@@ -40,7 +40,16 @@ class _SignupscreenState extends State<Signupscreen> {
 
     if (result['success']) {
       if (mounted) {
-        _showOtpDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully! Please login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     } else {
       if (mounted) {
@@ -54,96 +63,6 @@ class _SignupscreenState extends State<Signupscreen> {
         );
       }
     }
-  }
-
-  void _showOtpDialog() {
-    final otpController = TextEditingController();
-    final email = _emailController.text.trim();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        bool isVerifying = false;
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) => AlertDialog(
-            title: const Text('Email Verification'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('An OTP has been sent to $email. Enter it below to activate your account.'),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  decoration: InputDecoration(
-                    hintText: 'Enter 4-digit OTP',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    helperText: '(Use 1234 for testing)',
-                    helperStyle: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: isVerifying ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: isVerifying
-                    ? null
-                    : () async {
-                        final otp = otpController.text.trim();
-                        if (otp.length != 4) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter a valid 4-digit OTP')),
-                          );
-                          return;
-                        }
-
-                        setDialogState(() => isVerifying = true);
-
-                        final result = await _authService.verifySignupOtp(email, otp);
-
-                        if (!mounted) return;
-                        setDialogState(() => isVerifying = false);
-
-                        if (result['success'] == true) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Account verified! You can now log in.'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(result['message'] ?? 'Invalid OTP. Please try again.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                child: isVerifying
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Verify'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -169,29 +88,30 @@ class _SignupscreenState extends State<Signupscreen> {
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Spacer(flex: 2),
-                      Text(
-                        'Hi !',
-                        style: GoogleFonts.manrope(
-                          color: Colors.blue[900],
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                      children: [
+                        const Spacer(flex: 2),
+                        Text(
+                          'Hi !',
+                          style: GoogleFonts.manrope(
+                            color: Colors.blue[900],
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'create a new account',
-                        style: GoogleFonts.manrope(
-                          color: Colors.blueGrey,
-                          fontSize: 16,
+                        const SizedBox(height: 8),
+                        Text(
+                          'create a new account',
+                          style: GoogleFonts.manrope(
+                            color: Colors.blueGrey,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const Spacer(flex: 3),
-                      Center(
+                        const Spacer(flex: 3),
+                        Center(
                           child: TextFormField(
                             controller: _fullNameController,
-                            validator: (v) => v!.isEmpty ? 'Enter your full name' : null,
+                            validator: (v) =>
+                                v!.isEmpty ? 'Enter your full name' : null,
                             decoration: InputDecoration(
                               labelText: 'Full Name',
                               prefixIcon: Icon(
@@ -203,14 +123,18 @@ class _SignupscreenState extends State<Signupscreen> {
                               ),
                             ),
                           ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
                           child: TextFormField(
                             controller: _emailController,
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Enter your email';
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) return 'Enter a valid email';
+                              if (v == null || v.isEmpty)
+                                return 'Enter your email';
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(v))
+                                return 'Enter a valid email';
                               return null;
                             },
                             decoration: InputDecoration(
@@ -224,12 +148,13 @@ class _SignupscreenState extends State<Signupscreen> {
                               ),
                             ),
                           ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
                           child: TextFormField(
                             controller: _usernameController,
-                            validator: (v) => v!.isEmpty ? 'Enter a username' : null,
+                            validator: (v) =>
+                                v!.isEmpty ? 'Enter a username' : null,
                             decoration: InputDecoration(
                               labelText: 'username',
                               prefixIcon: Icon(
@@ -241,17 +166,21 @@ class _SignupscreenState extends State<Signupscreen> {
                               ),
                             ),
                           ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
                           child: TextFormField(
                             controller: _passwordController,
                             obscureText: _isPasswordVisible,
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Enter a password';
-                              if (v.length < 6) return 'Password must be at least 6 characters';
-                              if (!RegExp(r'[a-zA-Z]').hasMatch(v)) return 'Password must contain at least one letter';
-                              if (!RegExp(r'[0-9]').hasMatch(v)) return 'Password must contain at least one number';
+                              if (v == null || v.isEmpty)
+                                return 'Enter a password';
+                              if (v.length < 6)
+                                return 'Password must be at least 6 characters';
+                              if (!RegExp(r'[a-zA-Z]').hasMatch(v))
+                                return 'Password must contain at least one letter';
+                              if (!RegExp(r'[0-9]').hasMatch(v))
+                                return 'Password must contain at least one number';
                               return null;
                             },
                             decoration: InputDecoration(
@@ -278,107 +207,107 @@ class _SignupscreenState extends State<Signupscreen> {
                               ),
                             ),
                           ),
-                      ),
-                      const Spacer(flex: 2),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleSignup,
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            minimumSize: const Size(double.infinity, 50),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.blue[900],
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'SIGN UP',
-                                  style: TextStyle(fontSize: 16),
-                                ),
                         ),
-                      ),
-                      const Spacer(flex: 2),
-                      const Row(
-                        children: [
-                          Expanded(child: Divider(thickness: 2)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('or'),
-                          ),
-                          Expanded(child: Divider(thickness: 2)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.facebook,
-                            color: Colors.blue[900],
-                            size: 40,
-                          ),
-                          const SizedBox(width: 24),
-                          const FaIcon(
-                            FontAwesomeIcons.google,
-                            color: Colors.green,
-                            size: 32,
-                          ),
-                          const SizedBox(width: 24),
-                          const Icon(
-                            Icons.apple,
-                            color: Colors.black,
-                            size: 40,
-                          ),
-                        ],
-                      ),
-                      const Spacer(flex: 2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Already have an account?",
-                            style: GoogleFonts.manrope(
-                              color: Colors.blueGrey,
-                              fontSize: 16,
+                        const Spacer(flex: 2),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSignup,
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              minimumSize: const Size(double.infinity, 50),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.blue[900],
                             ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'SIGN UP',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LoginScreen(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              'Sign In',
+                        ),
+                        const Spacer(flex: 2),
+                        const Row(
+                          children: [
+                            Expanded(child: Divider(thickness: 2)),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text('or'),
+                            ),
+                            Expanded(child: Divider(thickness: 2)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.facebook,
+                              color: Colors.blue[900],
+                              size: 40,
+                            ),
+                            const SizedBox(width: 24),
+                            const FaIcon(
+                              FontAwesomeIcons.google,
+                              color: Colors.green,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 24),
+                            const Icon(
+                              Icons.apple,
+                              color: Colors.black,
+                              size: 40,
+                            ),
+                          ],
+                        ),
+                        const Spacer(flex: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Already have an account?",
                               style: GoogleFonts.manrope(
-                                color: Colors.blue[900],
-                                fontWeight: FontWeight.bold,
+                                color: Colors.blueGrey,
                                 fontSize: 16,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'Sign In',
+                                style: GoogleFonts.manrope(
+                                  color: Colors.blue[900],
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
             ),
           );
         },

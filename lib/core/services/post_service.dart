@@ -38,14 +38,10 @@ class PostService extends ChangeNotifier {
       }
 
       final snapshot = await query.get();
-      _posts = snapshot.docs
-          .map(
-            (doc) => Post.fromJson({
-              ...Map<String, dynamic>.from(doc.data()!),
-              'id': doc.id,
-            }),
-          )
-          .toList();
+      _posts = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Post.fromJson({...data, 'id': doc.id});
+      }).toList();
 
       if (search != null && search.isNotEmpty) {
         _posts = _posts
@@ -78,14 +74,10 @@ class PostService extends ChangeNotifier {
           .orderBy('created_at', descending: true)
           .get();
 
-      _posts = snapshot.docs
-          .map(
-            (doc) => Post.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }),
-          )
-          .toList();
+      _posts = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Post.fromJson({...data, 'id': doc.id});
+      }).toList();
 
       _isLoading = false;
       notifyListeners();
