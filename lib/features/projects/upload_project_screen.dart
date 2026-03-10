@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
@@ -95,32 +94,25 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
         ));
       }
 
-      // Cover Image - Sending under multiple keys to ensure backend compatibility
+      // Cover Image - single field for Django (e.g. cover_image)
       if (_selectedCoverImage != null) {
         final extension = _selectedCoverImage!.name.split('.').last.toLowerCase();
         final mimeType = extension == 'png' ? 'image/png' : 'image/jpeg';
         final fileName = 'project_cover_${DateTime.now().millisecondsSinceEpoch}.$extension';
-        final fileBytes = _selectedCoverImageBytes;
-        final filePath = _selectedFilePath;
-
-        // List of keys to try (backend might expect any of these)
-        final imageKeys = ['cover_image', 'Cover_image', 'image', 'project_image'];
-
-        for (final key in imageKeys) {
-          if (kIsWeb && fileBytes != null) {
-            files.add(http.MultipartFile.fromBytes(
-              key,
-              fileBytes,
-              filename: fileName,
-              contentType: MediaType.parse(mimeType),
-            ));
-          } else if (!kIsWeb && _selectedCoverImage != null) {
-            files.add(await http.MultipartFile.fromPath(
-              key,
-              _selectedCoverImage!.path,
-              contentType: MediaType.parse(mimeType),
-            ));
-          }
+        if (kIsWeb && _selectedCoverImageBytes != null) {
+          files.add(http.MultipartFile.fromBytes(
+            'cover_image',
+            _selectedCoverImageBytes!,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ));
+        } else if (!kIsWeb) {
+          files.add(await http.MultipartFile.fromPath(
+            'cover_image',
+            _selectedCoverImage!.path,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ));
         }
       }
 
@@ -134,7 +126,8 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
 
       if (mounted) {
         setState(() => _isUploading = false);
-        if (result != null) {
+        final success = result['success'] == true;
+        if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Project uploaded successfully!'),
@@ -144,8 +137,10 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
           Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to upload project. Please try again.'),
+            SnackBar(
+              content: Text(
+                result['message'] ?? 'Failed to upload project. Please try again.',
+              ),
               backgroundColor: Colors.red,
             ),
           );

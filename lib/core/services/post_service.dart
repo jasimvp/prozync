@@ -40,27 +40,28 @@ class PostService extends ChangeNotifier {
     }
   }
 
-  Future<Post?> createPost(
+  /// Returns {'success': true, 'post': Post} or {'success': false, 'message': String}.
+  Future<Map<String, dynamic>> createPost(
     String content, {
     int? projectId,
     http.MultipartFile? imageFile,
   }) async {
     try {
-      // Backend requires an explicit `user` field, using the auth user.
       if (ProfileService().myProfile == null) {
         await ProfileService().fetchMyProfile();
       }
       final currentUserId = ProfileService().myProfile?.user;
       if (currentUserId == null) {
-        debugPrint('Error creating post: no authenticated user found');
-        return null;
+        return {'success': false, 'message': 'Not logged in. Please sign in again.'};
       }
 
-      final fields = {
+      final fields = <String, String>{
         'content': content,
-        if (projectId != null) 'project': projectId.toString(),
         'user': currentUserId.toString(),
       };
+      if (projectId != null) {
+        fields['project'] = projectId.toString();
+      }
 
       final response = await _apiService.postMultipart(
         '/posts/',
@@ -69,15 +70,26 @@ class PostService extends ChangeNotifier {
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final post = Post.fromJson(jsonDecode(response.body));
+        final post = Post.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
         _posts.insert(0, post);
         notifyListeners();
-        return post;
+        return {'success': true, 'post': post};
       }
+      // Surface Django validation/error message
+      String message = 'Failed to create post';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic>) {
+          final first = body.values.firstOrNull;
+          if (first is List && first.isNotEmpty) message = first.first.toString();
+          else if (first != null) message = first.toString();
+        }
+      } catch (_) {}
+      return {'success': false, 'message': message};
     } catch (e) {
       debugPrint('Error creating post: $e');
+      return {'success': false, 'message': 'Network error: $e'};
     }
-    return null;
   }
 
   Future<void> likePost(int id) async {

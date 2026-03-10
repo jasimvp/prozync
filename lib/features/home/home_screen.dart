@@ -463,19 +463,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                               imageFile: imageFile,
                                             );
 
-                                        if (mounted) {
+                                        if (!mounted) return;
+                                        setModalState(() => isPosting = false);
+                                        final success = result['success'] == true;
+                                        if (success) {
                                           Navigator.pop(context);
-                                          if (result != null) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Post published!',
-                                                ),
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Post published!'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                result['message'] ?? 'Failed to create post',
                                               ),
-                                            );
-                                          }
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
                                         }
                                       },
                                 style: ElevatedButton.styleFrom(

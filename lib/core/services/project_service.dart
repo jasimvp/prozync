@@ -158,29 +158,49 @@ class ProjectService extends ChangeNotifier {
     }
   }
 
-  Future<Project?> createProject(
+  /// Returns {'success': true, 'project': Project} or {'success': false, 'message': String}.
+  Future<Map<String, dynamic>> createProject(
     Map<String, String> data, {
     List<http.MultipartFile>? files,
   }) async {
     try {
+      if (ProfileService().myProfile == null) {
+        await ProfileService().fetchMyProfile();
+      }
+      final currentUserId = ProfileService().myProfile?.user;
+      if (currentUserId == null) {
+        return {'success': false, 'message': 'Not logged in. Please sign in again.'};
+      }
+      final payload = Map<String, String>.from(data)
+        ..['owner'] = currentUserId.toString();
+
       final response = await _apiService.postMultipart(
         '/projects/',
-        data,
+        payload,
         files: files,
       );
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final project = Project.fromJson(jsonDecode(response.body));
+        final project = Project.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
         _projects.insert(0, project);
         _myRepos.insert(0, project);
         notifyListeners();
-        return project;
-      } else {
-        debugPrint('Failed to create project: ${response.body}');
+        return {'success': true, 'project': project};
       }
+      String message = 'Failed to upload project';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic>) {
+          final first = body.values.firstOrNull;
+          if (first is List && first.isNotEmpty) message = first.first.toString();
+          else if (first != null) message = first.toString();
+        }
+      } catch (_) {}
+      debugPrint('Failed to create project: ${response.statusCode} ${response.body}');
+      return {'success': false, 'message': message};
     } catch (e) {
       debugPrint('Error creating project: $e');
+      return {'success': false, 'message': 'Network error: $e'};
     }
-    return null;
   }
 
   Future<bool> deleteProject(int id) async {
