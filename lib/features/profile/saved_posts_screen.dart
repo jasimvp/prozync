@@ -470,7 +470,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
 }
 
 class _ProjectUnpinButton extends StatefulWidget {
-  final int projectId;
+  final String projectId;
   final ProjectService projectService;
   const _ProjectUnpinButton({
     required this.projectId,

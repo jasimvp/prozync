@@ -1,10 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:prozync/core/services/project_service.dart';
+import 'package:prozync/core/services/cloudinary_service.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 
 class UploadProjectScreen extends StatefulWidget {
@@ -20,18 +20,19 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
   final _descController = TextEditingController();
   final _techController = TextEditingController();
   final _readmeController = TextEditingController();
-  
+
   String? _selectedFileName;
   String? _selectedFilePath;
   dynamic _selectedFileBytes;
-  
+
   XFile? _selectedCoverImage;
   Uint8List? _selectedCoverImageBytes;
-  
+
   bool _isPrivate = false;
   bool _isUploading = false;
-  
+
   final _imagePicker = ImagePicker();
+  final _cloudinaryService = CloudinaryService();
 
   Future<void> _pickZipFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -65,7 +66,7 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
 
   Future<void> _handleUpload() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_selectedFileName == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a project ZIP file')),
@@ -76,53 +77,48 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
     setState(() => _isUploading = true);
 
     try {
-      List<http.MultipartFile> files = [];
+      String? coverImageUrl;
+      String? zipUrl;
 
-      // ZIP File
-      if (kIsWeb && _selectedFileBytes != null) {
-        files.add(http.MultipartFile.fromBytes(
-          'project_zip',
-          _selectedFileBytes,
-          filename: _selectedFileName!.replaceAll(RegExp(r'[^\w.]'), '_'),
-          contentType: MediaType('application', 'zip'),
-        ));
-      } else if (!kIsWeb && _selectedFilePath != null) {
-        files.add(await http.MultipartFile.fromPath(
-          'project_zip',
-          _selectedFilePath!,
-          contentType: MediaType('application', 'zip'),
-        ));
-      }
-
-      // Cover Image - single field for Django (e.g. cover_image)
+      // Upload Cover Image if exists
       if (_selectedCoverImage != null) {
-        final extension = _selectedCoverImage!.name.split('.').last.toLowerCase();
-        final mimeType = extension == 'png' ? 'image/png' : 'image/jpeg';
-        final fileName = 'project_cover_${DateTime.now().millisecondsSinceEpoch}.$extension';
-        if (kIsWeb && _selectedCoverImageBytes != null) {
-          files.add(http.MultipartFile.fromBytes(
-            'cover_image',
-            _selectedCoverImageBytes!,
-            filename: fileName,
-            contentType: MediaType.parse(mimeType),
-          ));
-        } else if (!kIsWeb) {
-          files.add(await http.MultipartFile.fromPath(
-            'cover_image',
-            _selectedCoverImage!.path,
-            filename: fileName,
-            contentType: MediaType.parse(mimeType),
-          ));
+        if (kIsWeb) {
+          coverImageUrl = await _cloudinaryService.uploadImage(
+            _selectedCoverImageBytes,
+            folder: 'project_covers',
+          );
+        } else {
+          coverImageUrl = await _cloudinaryService.uploadImage(
+            File(_selectedCoverImage!.path),
+            folder: 'project_covers',
+          );
         }
       }
 
-      final result = await ProjectService().createProject({
-        'project_name': _nameController.text.trim(),
-        'description': _descController.text.trim(),
-        'technology': _techController.text.trim(),
-        'readme': _readmeController.text.trim(),
-        'is_private': _isPrivate.toString(),
-      }, files: files);
+      // Upload ZIP File
+      if (kIsWeb && _selectedFileBytes != null) {
+        zipUrl = await _cloudinaryService.uploadImage(
+          _selectedFileBytes,
+          folder: 'project_zips',
+        );
+      } else if (_selectedFilePath != null) {
+        zipUrl = await _cloudinaryService.uploadImage(
+          File(_selectedFilePath!),
+          folder: 'project_zips',
+        );
+      }
+
+      final result = await ProjectService().createProject(
+        {
+          'project_name': _nameController.text.trim(),
+          'description': _descController.text.trim(),
+          'technology': _techController.text.trim(),
+          'readme': _readmeController.text.trim(),
+          'is_private': _isPrivate.toString(),
+        },
+        coverImageUrl: coverImageUrl,
+        zipUrl: zipUrl,
+      );
 
       if (mounted) {
         setState(() => _isUploading = false);
@@ -139,7 +135,8 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                result['message'] ?? 'Failed to upload project. Please try again.',
+                result['message'] ??
+                    'Failed to upload project. Please try again.',
               ),
               backgroundColor: Colors.red,
             ),
@@ -203,17 +200,21 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
               _buildTextField(
                 controller: _readmeController,
                 label: 'README Content',
-                hint: 'Detailed instructions or documentation (Markdown allowed)',
+                hint:
+                    'Detailed instructions or documentation (Markdown allowed)',
                 icon: Icons.article_outlined,
                 maxLines: 5,
               ),
-              
+
               const SizedBox(height: 32),
               _buildSectionTitle('Assets'),
               const SizedBox(height: 16),
-              
+
               // Cover Image Picker
-              const Text('Cover Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text(
+                'Cover Image',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickCoverImage,
@@ -235,19 +236,29 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppTheme.primaryColor.withOpacity(0.5)),
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 40,
+                              color: AppTheme.primaryColor.withOpacity(0.5),
+                            ),
                             const SizedBox(height: 8),
-                            const Text('Select a cover image', style: TextStyle(color: Colors.grey)),
+                            const Text(
+                              'Select a cover image',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ],
                         )
                       : null,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // ZIP Picker
-              const Text('Source Code', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text(
+                'Source Code',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickZipFile,
@@ -255,13 +266,13 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: _selectedFileName != null 
-                        ? Colors.green.withOpacity(0.05) 
+                    color: _selectedFileName != null
+                        ? Colors.green.withOpacity(0.05)
                         : AppTheme.primaryColor.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _selectedFileName != null 
-                          ? Colors.green.withOpacity(0.3) 
+                      color: _selectedFileName != null
+                          ? Colors.green.withOpacity(0.3)
                           : AppTheme.primaryColor.withOpacity(0.3),
                       style: BorderStyle.solid,
                     ),
@@ -269,17 +280,25 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        _selectedFileName != null ? Icons.check_circle_rounded : Icons.folder_zip_outlined,
+                        _selectedFileName != null
+                            ? Icons.check_circle_rounded
+                            : Icons.folder_zip_outlined,
                         size: 32,
-                        color: _selectedFileName != null ? Colors.green : AppTheme.primaryColor,
+                        color: _selectedFileName != null
+                            ? Colors.green
+                            : AppTheme.primaryColor,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Text(
                           _selectedFileName ?? 'Select Project ZIP file',
                           style: TextStyle(
-                            color: _selectedFileName != null ? Colors.green[700] : Colors.grey[600],
-                            fontWeight: _selectedFileName != null ? FontWeight.bold : FontWeight.normal,
+                            color: _selectedFileName != null
+                                ? Colors.green[700]
+                                : Colors.grey[600],
+                            fontWeight: _selectedFileName != null
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -287,11 +306,14 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
               _buildSectionTitle('Settings'),
               SwitchListTile(
-                title: const Text('Private Project', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                title: const Text(
+                  'Private Project',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
                 subtitle: const Text('Only you can view this project'),
                 value: _isPrivate,
                 onChanged: (v) => setState(() => _isPrivate = v),
@@ -302,9 +324,9 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                   color: AppTheme.primaryColor,
                 ),
               ),
-              
+
               const SizedBox(height: 48),
-              
+
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -313,18 +335,26 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                     elevation: 0,
                   ),
                   child: _isUploading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : const Text(
                           'Publish Project',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                 ),
               ),
@@ -376,7 +406,10 @@ class _UploadProjectScreenState extends State<UploadProjectScreen> {
               borderRadius: BorderRadius.circular(15),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
       ],

@@ -475,7 +475,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
   Widget _buildPlaceholderImage() {
     return Image.network(
-      'https://picsum.photos/seed/${widget.project.id + 100}/1200/800',
+      'https://picsum.photos/seed/${widget.project.id.hashCode + 100}/1200/800',
       fit: BoxFit.cover,
     );
   }

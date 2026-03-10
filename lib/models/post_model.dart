@@ -1,11 +1,11 @@
 import '../core/constants.dart';
 
 class Post {
-  final int id;
-  final int user;
+  final String id;
+  final String user;
   final String username;
   final String fullName;
-  final int? project;
+  final String? project;
   final String? image;
   final String content;
   final int likeCount;
@@ -38,11 +38,11 @@ class Post {
   }
 
   Post copyWith({
-    int? id,
-    int? user,
+    String? id,
+    String? user,
     String? username,
     String? fullName,
-    int? project,
+    String? project,
     String? image,
     String? content,
     int? likeCount,
@@ -68,25 +68,33 @@ class Post {
   }
 
   factory Post.fromJson(Map<String, dynamic> json) {
-    // Try multiple possible field names for username
-    final rawUsername = json['username'] ?? json['user_name'] ?? json['author_username'] ?? '';
-    final rawFullName = json['full_name'] ?? json['author_name'] ?? json['user_full_name'] ?? '';
-    // Display the full name if username is empty, or vice versa
-    final displayUsername = rawUsername.toString().isNotEmpty ? rawUsername.toString() : rawFullName.toString();
+    final rawUsername =
+        json['username'] ?? json['user_name'] ?? json['author_username'] ?? '';
+    final rawFullName =
+        json['full_name'] ??
+        json['author_name'] ??
+        json['user_full_name'] ??
+        '';
+    final displayUsername = rawUsername.toString().isNotEmpty
+        ? rawUsername.toString()
+        : rawFullName.toString();
+
     return Post(
-      id: json['id'] ?? 0,
-      user: json['user'] is int ? json['user'] : (json['user']?['id'] ?? 0),
+      id: json['id']?.toString() ?? '',
+      user: json['user']?.toString() ?? '',
       username: displayUsername.isNotEmpty ? displayUsername : 'Unknown',
       fullName: rawFullName.toString(),
-      project: json['project'],
-      image: json['image'],
+      project: json['project']?.toString(),
+      image: json['image']?.toString(),
       content: json['content'] ?? '',
       likeCount: json['like_count'] ?? 0,
       commentCount: json['comment_count'] ?? 0,
       isSaved: json['is_saved'] ?? false,
       isLiked: json['is_liked'] ?? false,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? (json['created_at'] is String
+                ? DateTime.parse(json['created_at'])
+                : (json['created_at'] as dynamic).toDate())
           : DateTime.now(),
     );
   }

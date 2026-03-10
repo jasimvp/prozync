@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/constants.dart';
 
 class Project {
-  final int id;
-  final int owner;
+  final String id;
+  final String owner;
   final String ownerName;
   final String projectName;
   final String slug;
@@ -56,37 +57,12 @@ class Project {
     if (coverImage == null || coverImage!.isEmpty) {
       return 'https://ui-avatars.com/api/?name=$projectName&background=random';
     }
-
-    String imageUrl = coverImage!;
-
-    // Fix for backends returning localhost URLs instead of production ones
-    if (imageUrl.contains('127.0.0.1:8000') ||
-        imageUrl.contains('localhost:8000')) {
-      imageUrl = imageUrl.replaceAll(
-        RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'),
-        '',
-      );
-      // Ensure we don't have double slashes
-      if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
-      return '${AppConstants.baseUrl}/$imageUrl';
-    }
-
-    // If it's already a full production URL, use it
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
-    }
-
-    // Check if path starts with slash
-    if (imageUrl.startsWith('/')) {
-      imageUrl = imageUrl.substring(1);
-    }
-
-    return '${AppConstants.baseUrl}/$imageUrl';
+    return coverImage!; // Should be a full Cloudinary URL
   }
 
   Project copyWith({
-    int? id,
-    int? owner,
+    String? id,
+    String? owner,
     String? ownerName,
     String? projectName,
     String? slug,
@@ -131,21 +107,10 @@ class Project {
   }
 
   factory Project.fromJson(Map<String, dynamic> json) {
-    // Handle owner being an int or a Map
-    final rawOwner = json['owner'];
-    final int ownerId = rawOwner is int
-        ? rawOwner
-        : (rawOwner is Map ? (rawOwner['id'] ?? 0) : 0);
-
-    // Handle owner_name variations
-    final String ownerName =
-        json['owner_name'] ??
-        (rawOwner is Map ? (rawOwner['username'] ?? 'User') : 'User');
-
     return Project(
-      id: json['id'] ?? 0,
-      owner: ownerId,
-      ownerName: ownerName,
+      id: json['id']?.toString() ?? '',
+      owner: json['owner']?.toString() ?? '',
+      ownerName: json['owner_name'] ?? 'User',
       projectName: json['project_name'] ?? json['name'] ?? 'Untitled Project',
       slug: json['slug'] ?? '',
       description: json['description'] ?? '',
@@ -157,7 +122,9 @@ class Project {
       collaboratorCount: (json['collaborator_count'] ?? 0).toString(),
       collaborators: json['collaborators'] ?? [],
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? (json['created_at'] is Timestamp
+                ? (json['created_at'] as Timestamp).toDate()
+                : DateTime.parse(json['created_at'].toString()))
           : DateTime.now(),
       isPinned: json['is_pinned'] ?? false,
       likeCount: json['like_count'] ?? 0,
@@ -170,7 +137,9 @@ class Project {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'owner': owner,
+      'owner_name': ownerName,
       'project_name': projectName,
       'slug': slug,
       'description': description,
@@ -179,6 +148,8 @@ class Project {
       'cover_image': coverImage,
       'readme': readme,
       'is_private': isPrivate,
+      'collaborator_count': int.tryParse(collaboratorCount) ?? 0,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 }
