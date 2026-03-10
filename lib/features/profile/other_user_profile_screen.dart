@@ -26,7 +26,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   List<Project> pinnedProjects = [];
   bool isLoadingProjects = true;
   bool isLoadingPinned = true;
-  bool _isLoadingProfile = true;
   bool _isActionInProgress = false;
 
   @override
@@ -52,12 +51,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             final status = profile.connectionStatus.toLowerCase();
             isFollowing = status == 'following' || status == 'followed';
           }
-
-          _isLoadingProfile = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingProfile = false);
+      debugPrint('Error fetching profile: $e');
     }
   }
 

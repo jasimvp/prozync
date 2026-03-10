@@ -52,7 +52,10 @@ class Profile {
     }
 
     final rawUsername = json['username'] ?? json['user_name'] ?? '';
-    final userId = json['user']?.toString() ?? '';
+    // `user` is the Firebase Auth UID. It may be stored as 'user' or inferred from 'id' (doc id).
+    final userId = (json['user']?.toString() ?? '').isNotEmpty
+        ? json['user'].toString()
+        : json['id']?.toString() ?? '';
 
     return Profile(
       id: json['id']?.toString() ?? '',

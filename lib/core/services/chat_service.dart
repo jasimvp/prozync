@@ -83,7 +83,12 @@ class ChatService extends ChangeNotifier {
         });
   }
 
-  Future<bool> sendMessage(String receiverId, String text) async {
+  Future<bool> sendMessage(
+    String receiverId,
+    String text, {
+    String? receiverName,
+    String? receiverImage,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) return false;
 
@@ -91,6 +96,32 @@ class ChatService extends ChangeNotifier {
     final timestamp = FieldValue.serverTimestamp();
 
     try {
+      // Fetch receiver's profile if name/image not provided
+      String resolvedReceiverName = receiverName ?? 'User';
+      String resolvedReceiverImage =
+          receiverImage ??
+          'https://ui-avatars.com/api/?name=$resolvedReceiverName';
+
+      if (receiverName == null) {
+        try {
+          final receiverDoc = await _firestore
+              .collection('users')
+              .doc(receiverId)
+              .get();
+          if (receiverDoc.exists) {
+            final d = receiverDoc.data()!;
+            resolvedReceiverName = d['full_name'] ?? d['username'] ?? 'User';
+            resolvedReceiverImage =
+                d['profile_pic'] ??
+                'https://ui-avatars.com/api/?name=$resolvedReceiverName';
+          }
+        } catch (_) {}
+      }
+
+      final senderName = user.displayName ?? 'User';
+      final senderImage =
+          user.photoURL ?? 'https://ui-avatars.com/api/?name=$senderName';
+
       // Add message to chat
       await _firestore
           .collection('chats')
@@ -104,27 +135,29 @@ class ChatService extends ChangeNotifier {
             'read': false,
           });
 
-      // Update conversation for sender
+      // Update conversation for sender (stores receiver info)
       await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('conversations')
           .doc(receiverId)
           .set({
-            'other_user_name': 'User', // In real app, fetch name or store it
+            'other_user_name': resolvedReceiverName,
+            'other_user_image': resolvedReceiverImage,
             'last_message': text,
             'last_message_time': timestamp,
             'unread_count': 0,
           }, SetOptions(merge: true));
 
-      // Update conversation for receiver
+      // Update conversation for receiver (stores sender info)
       await _firestore
           .collection('users')
           .doc(receiverId)
           .collection('conversations')
           .doc(user.uid)
           .set({
-            'other_user_name': user.displayName ?? 'User',
+            'other_user_name': senderName,
+            'other_user_image': senderImage,
             'last_message': text,
             'last_message_time': timestamp,
             'unread_count': FieldValue.increment(1),

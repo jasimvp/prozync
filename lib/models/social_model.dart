@@ -64,6 +64,19 @@ class Invitation {
   });
 
   factory Invitation.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is DateTime) return value;
+      // Firestore Timestamp
+      try {
+        return (value as dynamic).toDate();
+      } catch (_) {}
+      try {
+        return DateTime.parse(value.toString());
+      } catch (_) {}
+      return DateTime.now();
+    }
+
     return Invitation(
       id: json['id']?.toString() ?? '',
       project: json['project'] is Map
@@ -83,15 +96,9 @@ class Invitation {
                 json['receiver_id']?.toString() ??
                 ''),
       status: json['status'] ?? 'PENDING',
-      sentAt: json['sent_at'] != null
-          ? (json['sent_at'] is DateTime
-                ? json['sent_at']
-                : DateTime.parse(json['sent_at'].toString()))
-          : (json['created_at'] != null
-                ? (json['created_at'] is DateTime
-                      ? json['created_at']
-                      : DateTime.parse(json['created_at'].toString()))
-                : DateTime.now()),
+      sentAt: parseDate(
+        json['sent_at'] ?? json['timestamp'] ?? json['created_at'],
+      ),
     );
   }
 }

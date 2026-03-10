@@ -5,6 +5,10 @@ import 'package:prozync/models/project_model.dart';
 import 'package:prozync/models/social_model.dart';
 
 class ProjectService extends ChangeNotifier {
+  static final ProjectService _instance = ProjectService._internal();
+  factory ProjectService() => _instance;
+  ProjectService._internal();
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -63,7 +67,7 @@ class ProjectService extends ChangeNotifier {
 
       final snapshot = await _firestore
           .collection('projects')
-          .where('owner_id', isEqualTo: _auth.currentUser!.uid)
+          .where('owner', isEqualTo: _auth.currentUser!.uid)
           .get();
       _myRepos = snapshot.docs.map((doc) {
         final data = doc.data();
@@ -84,29 +88,18 @@ class ProjectService extends ChangeNotifier {
       _isPinnedLoading = true;
       notifyListeners();
 
+      // Fetch pinned projects directly using owner + is_pinned flag
       final snapshot = await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .collection('pinned_projects')
-          .get();
-
-      final projectIds = snapshot.docs.map((doc) => doc.id).toList();
-      if (projectIds.isEmpty) {
-        _pinnedProjects = [];
-        _isPinnedLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final projectsSnapshot = await _firestore
           .collection('projects')
-          .where('id', whereIn: projectIds)
+          .where('owner', isEqualTo: _auth.currentUser!.uid)
+          .where('is_pinned', isEqualTo: true)
           .get();
 
-      _pinnedProjects = projectsSnapshot.docs.map((doc) {
+      _pinnedProjects = snapshot.docs.map((doc) {
         final data = doc.data();
-        return Project.fromJson({...data, 'id': doc.id});
+        return Project.fromJson({...data, 'id': doc.id, 'is_pinned': true});
       }).toList();
+
       _isPinnedLoading = false;
       notifyListeners();
     } catch (e) {
@@ -136,15 +129,22 @@ class ProjectService extends ChangeNotifier {
         return;
       }
 
-      final projectsSnapshot = await _firestore
-          .collection('projects')
-          .where('id', whereIn: projectIds)
-          .get();
+      // Fetch projects in batches of 10 (Firestore whereIn limit)
+      final List<Project> fetchedProjects = [];
+      for (int i = 0; i < projectIds.length; i += 10) {
+        final batch = projectIds.skip(i).take(10).toList();
+        final batchSnapshot = await _firestore
+            .collection('projects')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+        for (final doc in batchSnapshot.docs) {
+          fetchedProjects.add(
+            Project.fromJson({...doc.data(), 'id': doc.id, 'is_saved': true}),
+          );
+        }
+      }
 
-      _savedProjects = projectsSnapshot.docs.map((doc) {
-        final data = doc.data();
-        return Project.fromJson({...data, 'id': doc.id});
-      }).toList();
+      _savedProjects = fetchedProjects;
       _isSavedLoading = false;
       notifyListeners();
     } catch (e) {
@@ -158,7 +158,7 @@ class ProjectService extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('projects')
-          .where('owner_id', isEqualTo: uid)
+          .where('owner', isEqualTo: uid)
           .get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -305,41 +305,32 @@ class ProjectService extends ChangeNotifier {
     if (user == null) return false;
 
     try {
-      final ref = _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('pinned_projects')
-          .doc(projectId);
-      final doc = await ref.get();
-      bool pinnedStatus = false;
-      if (doc.exists) {
-        await ref.delete();
-        pinnedStatus = false;
-      } else {
-        await ref.set({
-          'id': projectId,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-        pinnedStatus = true;
-      }
-
-      // Also update project document if the user is the owner
       final projectDoc = await _firestore
           .collection('projects')
           .doc(projectId)
           .get();
-      if (projectDoc.exists) {
-        final data = projectDoc.data()!;
-        if ((data['owner'] ?? data['owner_id']) == user.uid) {
-          await _firestore.collection('projects').doc(projectId).update({
-            'is_pinned': pinnedStatus,
-          });
-        }
+
+      if (!projectDoc.exists) return false;
+      final data = projectDoc.data()!;
+
+      // Only the project owner can pin
+      if ((data['owner'] ?? data['owner_id']) != user.uid) return false;
+
+      final currentPinned = data['is_pinned'] == true;
+      await _firestore.collection('projects').doc(projectId).update({
+        'is_pinned': !currentPinned,
+      });
+
+      // Update local myRepos state
+      final idx = _myRepos.indexWhere((p) => p.id == projectId);
+      if (idx != -1) {
+        _myRepos[idx].isPinned = !currentPinned;
       }
 
-      fetchPinnedProjects();
+      await fetchPinnedProjects();
       return true;
     } catch (e) {
+      debugPrint('Toggle pin error: $e');
       return false;
     }
   }
@@ -350,10 +341,26 @@ class ProjectService extends ChangeNotifier {
 
     try {
       final projectRef = _firestore.collection('projects').doc(projectId);
-      await projectRef.update({'likes_count': FieldValue.increment(1)});
+      final likeRef = projectRef.collection('likes').doc(user.uid);
+      final doc = await likeRef.get();
+
+      if (doc.exists) {
+        // Unlike
+        await likeRef.delete();
+        await projectRef.update({'likes_count': FieldValue.increment(-1)});
+      } else {
+        // Like
+        await likeRef.set({
+          'uid': user.uid,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        await projectRef.update({'likes_count': FieldValue.increment(1)});
+      }
+
       fetchProjects();
       return true;
     } catch (e) {
+      debugPrint('Error liking project: $e');
       return false;
     }
   }
@@ -396,7 +403,7 @@ class ProjectService extends ChangeNotifier {
       if (!projectDoc.exists) return false;
 
       final projectData = projectDoc.data()!;
-      final ownerId = projectData['owner_id'] ?? projectData['owner'] ?? '';
+      final ownerId = projectData['owner'] ?? projectData['owner_id'] ?? '';
       final projectName = projectData['project_name'] ?? 'Project';
 
       if (ownerId == user.uid)

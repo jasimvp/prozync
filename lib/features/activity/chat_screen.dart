@@ -34,11 +34,15 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    final success = await _chatService.sendMessage(widget.chatId, text);
+    final success = await _chatService.sendMessage(
+      widget.chatId,
+      text,
+      receiverName: widget.userName,
+      receiverImage: widget.userImage,
+    );
 
     if (success) {
       _messageController.clear();
-      // Auto scroll to bottom handled by StreamBuilder/ListView
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

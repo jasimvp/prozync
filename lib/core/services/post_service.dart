@@ -38,19 +38,46 @@ class PostService extends ChangeNotifier {
       }
 
       final snapshot = await query.get();
-      _posts = snapshot.docs.map((doc) {
+      final uid = _auth.currentUser?.uid;
+
+      final List<Post> rawPosts = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return Post.fromJson({...data, 'id': doc.id});
       }).toList();
 
       if (search != null && search.isNotEmpty) {
-        _posts = _posts
+        _posts = rawPosts
             .where(
               (p) =>
                   p.content.toLowerCase().contains(search.toLowerCase()) ||
                   p.username.toLowerCase().contains(search.toLowerCase()),
             )
             .toList();
+      } else {
+        _posts = rawPosts;
+      }
+
+      // Fetch liked/saved state for current user
+      if (uid != null) {
+        for (int i = 0; i < _posts.length; i++) {
+          final post = _posts[i];
+          final likeDoc = await _firestore
+              .collection('posts')
+              .doc(post.id)
+              .collection('likes')
+              .doc(uid)
+              .get();
+          final saveDoc = await _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('saved_posts')
+              .doc(post.id)
+              .get();
+          _posts[i] = post.copyWith(
+            isLiked: likeDoc.exists,
+            isSaved: saveDoc.exists,
+          );
+        }
       }
 
       _isLoading = false;
@@ -124,17 +151,43 @@ class PostService extends ChangeNotifier {
   }
 
   Future<bool> likePost(String postId) async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
     try {
       final postRef = _firestore.collection('posts').doc(postId);
-      await postRef.update({'like_count': FieldValue.increment(1)});
+      final likeRef = postRef.collection('likes').doc(user.uid);
+      final doc = await likeRef.get();
 
-      final idx = _posts.indexWhere((p) => p.id == postId);
-      if (idx != -1) {
-        _posts[idx] = _posts[idx].copyWith(
-          likeCount: _posts[idx].likeCount + 1,
-          isLiked: true,
-        );
-        notifyListeners();
+      if (doc.exists) {
+        // Unlike
+        await likeRef.delete();
+        await postRef.update({'like_count': FieldValue.increment(-1)});
+
+        final idx = _posts.indexWhere((p) => p.id == postId);
+        if (idx != -1) {
+          _posts[idx] = _posts[idx].copyWith(
+            likeCount: _posts[idx].likeCount - 1,
+            isLiked: false,
+          );
+          notifyListeners();
+        }
+      } else {
+        // Like
+        await likeRef.set({
+          'uid': user.uid,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        await postRef.update({'like_count': FieldValue.increment(1)});
+
+        final idx = _posts.indexWhere((p) => p.id == postId);
+        if (idx != -1) {
+          _posts[idx] = _posts[idx].copyWith(
+            likeCount: _posts[idx].likeCount + 1,
+            isLiked: true,
+          );
+          notifyListeners();
+        }
       }
       return true;
     } catch (e) {
@@ -309,6 +362,22 @@ class PostService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error deleting post: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updatePost(String id, String content) async {
+    try {
+      await _firestore.collection('posts').doc(id).update({'content': content});
+
+      final idx = _posts.indexWhere((p) => p.id == id);
+      if (idx != -1) {
+        _posts[idx] = _posts[idx].copyWith(content: content);
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error updating post: $e');
       return false;
     }
   }
