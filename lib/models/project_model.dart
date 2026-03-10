@@ -108,7 +108,7 @@ class Project {
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
       id: json['id']?.toString() ?? '',
-      owner: json['owner']?.toString() ?? '',
+      owner: json['owner']?.toString() ?? json['owner_id']?.toString() ?? '',
       ownerName: json['owner_name'] ?? 'User',
       projectName: json['project_name'] ?? json['name'] ?? 'Untitled Project',
       slug: json['slug'] ?? '',
@@ -147,7 +147,9 @@ class Project {
       'cover_image': coverImage,
       'readme': readme,
       'is_private': isPrivate,
+      'is_pinned': isPinned,
       'collaborator_count': int.tryParse(collaboratorCount) ?? 0,
+      'collaborators': collaborators,
       'created_at': createdAt.toIso8601String(),
     };
   }

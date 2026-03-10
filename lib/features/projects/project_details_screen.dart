@@ -336,6 +336,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                         widget.project,
                                       );
                                   final interested = current.isInterested;
+                                  if (isOwner) return const SizedBox.shrink();
+
                                   return ElevatedButton.icon(
                                     onPressed: () async {
                                       final success = await ProjectService()

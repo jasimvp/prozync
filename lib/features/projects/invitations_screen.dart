@@ -27,7 +27,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
         listenable: _projectService,
         builder: (context, _) {
           final invitations = _projectService.invitations
-              .where((i) => i.status == 'PENDING')
+              .where((i) => i.status.toUpperCase() == 'PENDING')
               .toList();
 
           if (_projectService.isLoading && invitations.isEmpty) {
@@ -122,7 +122,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => _handleResponse(invite.id, 'REJECTED'),
+                  onPressed: () => _handleResponse(invite.id, 'rejected'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -136,7 +136,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _handleResponse(invite.id, 'ACCEPTED'),
+                  onPressed: () => _handleResponse(invite.id, 'accepted'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
@@ -155,7 +155,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
     );
   }
 
-  Future<void> _handleResponse(int inviteId, String status) async {
+  Future<void> _handleResponse(String inviteId, String status) async {
     final success = await _projectService.respondToInvitation(inviteId, status);
     if (!mounted) return;
 
@@ -163,7 +163,7 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
       SnackBar(
         content: Text(
           success
-              ? 'Success: Invitation $status'
+              ? 'Success: Invitation ${status.toUpperCase()}'
               : 'Failed to respond to invitation',
         ),
         backgroundColor: success ? Colors.green : Colors.red,

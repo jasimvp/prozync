@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:prozync/models/project_model.dart';
+import 'package:prozync/models/social_model.dart';
 
 class ProjectService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,7 +12,7 @@ class ProjectService extends ChangeNotifier {
   List<Project> _myRepos = [];
   List<Project> _pinnedProjects = [];
   List<Project> _savedProjects = [];
-  List<dynamic> _invitations = [];
+  List<Invitation> _invitations = [];
 
   bool _isLoading = false;
   bool _isMyReposLoading = false;
@@ -22,7 +23,7 @@ class ProjectService extends ChangeNotifier {
   List<Project> get myRepos => _myRepos;
   List<Project> get pinnedProjects => _pinnedProjects;
   List<Project> get savedProjects => _savedProjects;
-  List<dynamic> get invitations => _invitations;
+  List<Invitation> get invitations => _invitations;
 
   bool get isLoading => _isLoading;
   bool get isMyReposLoading => _isMyReposLoading;
@@ -65,7 +66,7 @@ class ProjectService extends ChangeNotifier {
           .where('owner_id', isEqualTo: _auth.currentUser!.uid)
           .get();
       _myRepos = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         return Project.fromJson({...data, 'id': doc.id});
       }).toList();
       _isMyReposLoading = false;
@@ -103,7 +104,7 @@ class ProjectService extends ChangeNotifier {
           .get();
 
       _pinnedProjects = projectsSnapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         return Project.fromJson({...data, 'id': doc.id});
       }).toList();
       _isPinnedLoading = false;
@@ -141,7 +142,7 @@ class ProjectService extends ChangeNotifier {
           .get();
 
       _savedProjects = projectsSnapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         return Project.fromJson({...data, 'id': doc.id});
       }).toList();
       _isSavedLoading = false;
@@ -160,7 +161,7 @@ class ProjectService extends ChangeNotifier {
           .where('owner_id', isEqualTo: uid)
           .get();
       return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         return Project.fromJson({...data, 'id': doc.id});
       }).toList();
     } catch (e) {
@@ -170,12 +171,94 @@ class ProjectService extends ChangeNotifier {
   }
 
   Future<void> fetchInvitations() async {
-    _invitations = [];
-    notifyListeners();
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final snapshot = await _firestore
+          .collection('invitations')
+          .where('receiver_id', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      _invitations = snapshot.docs.map((doc) {
+        return Invitation.fromJson({...doc.data(), 'id': doc.id});
+      }).toList();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching invitations: $e');
+      notifyListeners();
+    }
   }
 
-  Future<bool> respondToInvitation(dynamic id, String action) async {
-    return true;
+  Future<bool> respondToInvitation(String invitationId, String action) async {
+    try {
+      final inviteRef = _firestore.collection('invitations').doc(invitationId);
+      final inviteDoc = await inviteRef.get();
+      if (!inviteDoc.exists) return false;
+
+      final inviteData = inviteDoc.data()!;
+      final projectId = inviteData['project_id'];
+      final receiverId = inviteData['receiver_id'];
+      final receiverName = _auth.currentUser?.displayName ?? 'User';
+
+      if (action == 'accepted') {
+        // Add to project collaborators
+        final projectRef = _firestore.collection('projects').doc(projectId);
+        final projectDoc = await projectRef.get();
+        if (projectDoc.exists) {
+          final List<dynamic> collabs = List.from(
+            projectDoc.data()?['collaborators'] ?? [],
+          );
+          collabs.add({
+            'uid': receiverId,
+            'username': receiverName,
+            'profile_pic': _auth.currentUser?.photoURL,
+          });
+
+          await projectRef.update({
+            'collaborators': collabs,
+            'collaborator_count': collabs.length,
+          });
+
+          // Send Notification to sender that their invitation was accepted
+          final senderId = inviteData['sender_id'];
+          if (senderId != null) {
+            await _firestore
+                .collection('users')
+                .doc(senderId)
+                .collection('notifications')
+                .add({
+                  'type': 'collab_accept',
+                  'from_uid': _auth.currentUser?.uid,
+                  'from_name': receiverName,
+                  'project_id': projectId,
+                  'project_name':
+                      projectDoc.data()?['project_name'] ?? 'Project',
+                  'message': '$receiverName accepted your invitation to collab',
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'read': false,
+                });
+          }
+        }
+        await inviteRef.update({'status': 'accepted'});
+      } else {
+        await inviteRef.update({'status': 'rejected'});
+      }
+
+      // Refresh invitations list after responding
+      await fetchInvitations();
+      return true;
+    } catch (e) {
+      debugPrint('Error responding to invitation: $e');
+      return false;
+    }
   }
 
   Future<Map<String, dynamic>> createProject(
@@ -191,7 +274,7 @@ class ProjectService extends ChangeNotifier {
       final projectData = {
         ...data,
         'id': docRef.id,
-        'owner_id': user.uid,
+        'owner': user.uid,
         'owner_name': user.displayName ?? 'Anonymous',
         'cover_image': coverImageUrl,
         'project_zip': zipUrl,
@@ -228,14 +311,32 @@ class ProjectService extends ChangeNotifier {
           .collection('pinned_projects')
           .doc(projectId);
       final doc = await ref.get();
+      bool pinnedStatus = false;
       if (doc.exists) {
         await ref.delete();
+        pinnedStatus = false;
       } else {
         await ref.set({
           'id': projectId,
           'timestamp': FieldValue.serverTimestamp(),
         });
+        pinnedStatus = true;
       }
+
+      // Also update project document if the user is the owner
+      final projectDoc = await _firestore
+          .collection('projects')
+          .doc(projectId)
+          .get();
+      if (projectDoc.exists) {
+        final data = projectDoc.data()!;
+        if ((data['owner'] ?? data['owner_id']) == user.uid) {
+          await _firestore.collection('projects').doc(projectId).update({
+            'is_pinned': pinnedStatus,
+          });
+        }
+      }
+
       fetchPinnedProjects();
       return true;
     } catch (e) {
@@ -352,7 +453,83 @@ class ProjectService extends ChangeNotifier {
   }
 
   Future<bool> inviteUser(String projectId, String userId) async {
-    return true;
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      final projectDoc = await _firestore
+          .collection('projects')
+          .doc(projectId)
+          .get();
+      if (!projectDoc.exists) return false;
+
+      final projectData = projectDoc.data()!;
+      final projectName = projectData['project_name'] ?? 'Project';
+
+      // Check if already a collaborator
+      final List<dynamic> collaborators = projectData['collaborators'] ?? [];
+      if (collaborators.any((c) => (c is Map ? c['uid'] : c) == userId)) {
+        return false;
+      }
+
+      // Add to Invitations collection
+      await _firestore.collection('invitations').add({
+        'project_id': projectId,
+        'project_name': projectName,
+        'sender_id': user.uid,
+        'sender_name': user.displayName ?? 'Owner',
+        'receiver_id': userId,
+        'status': 'pending',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Send Notification to receiver
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .add({
+            'type': 'invitation',
+            'from_uid': user.uid,
+            'from_name': user.displayName ?? 'Someone',
+            'project_id': projectId,
+            'project_name': projectName,
+            'message':
+                '${user.displayName ?? 'Someone'} invited you to collab on $projectName',
+            'timestamp': FieldValue.serverTimestamp(),
+            'read': false,
+          });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error inviting user: $e');
+      return false;
+    }
+  }
+
+  Future<void> fetchUserPinnedProjects(String uid) async {
+    try {
+      _isPinnedLoading = true;
+      notifyListeners();
+
+      final snapshot = await _firestore
+          .collection('projects')
+          .where('owner', isEqualTo: uid)
+          .where('is_pinned', isEqualTo: true)
+          .get();
+
+      _pinnedProjects = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Project.fromJson({...data, 'id': doc.id});
+      }).toList();
+
+      _isPinnedLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isPinnedLoading = false;
+      debugPrint('Fetch User Pinned Projects Error: $e');
+      notifyListeners();
+    }
   }
 
   Project getProjectById(String id, Project fallback) {

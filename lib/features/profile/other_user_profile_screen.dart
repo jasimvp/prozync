@@ -12,7 +12,7 @@ import 'package:prozync/widgets/mention_text.dart';
 class OtherUserProfileScreen extends StatefulWidget {
   final Profile profile;
 
-  OtherUserProfileScreen({super.key, required this.profile});
+  const OtherUserProfileScreen({super.key, required this.profile});
 
   @override
   State<OtherUserProfileScreen> createState() => _OtherUserProfileScreenState();
@@ -22,7 +22,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   late Profile _currentProfile;
   bool isFollowing = false;
   List<Project> userProjects = [];
+  List<Project> pinnedProjects = [];
   bool isLoadingProjects = true;
+  bool isLoadingPinned = true;
   bool _isLoadingProfile = true;
   bool _isActionInProgress = false;
 
@@ -61,18 +63,24 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   Future<void> _loadUserProjects() async {
     try {
       final projects = await ProjectService().getUserProjects(
-        widget.profile.id,
+        widget.profile.user, // Use User ID
       );
       if (mounted) {
         setState(() {
-          userProjects = projects
-              .where((p) => p.owner == widget.profile.user)
-              .toList();
+          userProjects = projects;
           isLoadingProjects = false;
+          // Load pinned projects specifically
+          pinnedProjects = projects.where((p) => p.isPinned).toList();
+          isLoadingPinned = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => isLoadingProjects = false);
+      if (mounted) {
+        setState(() {
+          isLoadingProjects = false;
+          isLoadingPinned = false;
+        });
+      }
     }
   }
 
@@ -92,6 +100,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 const SizedBox(height: 32),
                 _buildAboutSection(context),
                 const SizedBox(height: 32),
+                if (pinnedProjects.isNotEmpty) ...[
+                  _buildPinnedSection(context),
+                  const SizedBox(height: 32),
+                ],
                 _buildWorksSection(context),
                 const SizedBox(height: 40),
               ],
@@ -496,6 +508,31 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 return _buildProjectItem(context, previewProjects[index]);
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPinnedSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pinned Projects',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ListView.builder(
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: pinnedProjects.length,
+            itemBuilder: (context, index) {
+              return _buildProjectItem(context, pinnedProjects[index]);
+            },
+          ),
         ],
       ),
     );

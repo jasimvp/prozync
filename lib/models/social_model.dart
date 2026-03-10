@@ -1,8 +1,8 @@
 class ConnectionRequest {
-  final int id;
-  final int sender;
+  final String id;
+  final String sender;
   final String senderName;
-  final int receiver;
+  final String receiver;
   final String receiverName;
   final String status;
   final DateTime createdAt;
@@ -19,30 +19,37 @@ class ConnectionRequest {
 
   factory ConnectionRequest.fromJson(Map<String, dynamic> json) {
     return ConnectionRequest(
-      id: json['id'] ?? 0,
-      sender: json['sender'] is int
-          ? json['sender']
-          : (json['sender']?['id'] ?? 0),
-      senderName: json['sender_name'] ?? (json['sender']?['username'] ?? ''),
-      receiver: json['receiver'] is int
-          ? json['receiver']
-          : (json['receiver']?['id'] ?? 0),
+      id: json['id']?.toString() ?? '',
+      sender: json['sender'] is Map
+          ? (json['sender']['id']?.toString() ?? '')
+          : (json['sender']?.toString() ?? json['sender_id']?.toString() ?? ''),
+      senderName:
+          json['sender_name'] ??
+          (json['sender'] is Map ? (json['sender']['username'] ?? '') : ''),
+      receiver: json['receiver'] is Map
+          ? (json['receiver']['id']?.toString() ?? '')
+          : (json['receiver']?.toString() ??
+                json['receiver_id']?.toString() ??
+                ''),
       receiverName:
-          json['receiver_name'] ?? (json['receiver']?['username'] ?? ''),
+          json['receiver_name'] ??
+          (json['receiver'] is Map ? (json['receiver']['username'] ?? '') : ''),
       status: json['status'] ?? 'PENDING',
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? (json['created_at'] is DateTime
+                ? json['created_at']
+                : DateTime.parse(json['created_at'].toString()))
           : DateTime.now(),
     );
   }
 }
 
 class Invitation {
-  final int id;
-  final int project;
+  final String id;
+  final String project;
   final String projectName;
   final String senderName;
-  final int receiver;
+  final String receiver;
   final String status;
   final DateTime sentAt;
 
@@ -58,21 +65,32 @@ class Invitation {
 
   factory Invitation.fromJson(Map<String, dynamic> json) {
     return Invitation(
-      id: json['id'] ?? 0,
-      project: json['project'] is int
-          ? json['project']
-          : (json['project']?['id'] ?? 0),
+      id: json['id']?.toString() ?? '',
+      project: json['project'] is Map
+          ? (json['project']['id']?.toString() ?? '')
+          : (json['project']?.toString() ??
+                json['project_id']?.toString() ??
+                ''),
       projectName:
-          json['project_name'] ?? (json['project']?['project_name'] ?? ''),
+          json['project_name'] ??
+          (json['project'] is Map
+              ? (json['project']?['project_name'] ?? '')
+              : ''),
       senderName: json['sender_name'] ?? '',
-      receiver: json['receiver'] is int
-          ? json['receiver']
-          : (json['receiver']?['id'] ?? 0),
+      receiver: json['receiver'] is Map
+          ? (json['receiver']['id']?.toString() ?? '')
+          : (json['receiver']?.toString() ??
+                json['receiver_id']?.toString() ??
+                ''),
       status: json['status'] ?? 'PENDING',
       sentAt: json['sent_at'] != null
-          ? DateTime.parse(json['sent_at'])
+          ? (json['sent_at'] is DateTime
+                ? json['sent_at']
+                : DateTime.parse(json['sent_at'].toString()))
           : (json['created_at'] != null
-                ? DateTime.parse(json['created_at'])
+                ? (json['created_at'] is DateTime
+                      ? json['created_at']
+                      : DateTime.parse(json['created_at'].toString()))
                 : DateTime.now()),
     );
   }
