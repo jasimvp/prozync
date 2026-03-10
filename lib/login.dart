@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   void _handleLogin() async {
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -119,12 +120,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: TextFormField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: Icon(
                               Icons.lock_outline,
                               color: Colors.blue[900],
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.blue[900],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20),
