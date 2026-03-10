@@ -25,188 +25,170 @@ class ProfileService extends ChangeNotifier {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
 
-    try {
-      final endpoint = search != null
-          ? '/profiles/?search=$search'
-          : '/profiles/';
-      final response = await _apiService.get(endpoint);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        _profiles = data.map((json) => Profile.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint('Error fetching profiles: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 500));
+    _profiles = [
+      Profile(
+        id: 1,
+        user: 1,
+        username: 'jasim_dev',
+        email: 'jasim@example.com',
+        fullName: 'Jasim VP',
+        phone: '1234567890',
+        bio: 'Flutter Developer | UI Enthusiast',
+        profession: 'Software Engineer',
+        followerCount: '120',
+        repoCount: '15',
+        connectionStatus: 'following',
+      ),
+      Profile(
+        id: 2,
+        user: 2,
+        username: 'alice_smith',
+        email: 'alice@example.com',
+        fullName: 'Alice Smith',
+        phone: '0987654321',
+        bio: 'Backend Specialist',
+        profession: 'Developer',
+        followerCount: '450',
+        repoCount: '23',
+        connectionStatus: 'none',
+      ),
+      Profile(
+        id: 3,
+        user: 3,
+        username: 'bob_builder',
+        email: 'bob@example.com',
+        fullName: 'Bob Builder',
+        phone: '1122334455',
+        bio: 'Building the future',
+        profession: 'Architect',
+        followerCount: '300',
+        repoCount: '10',
+        connectionStatus: 'pending',
+      ),
+    ];
+
+    if (search != null && search.isNotEmpty) {
+      _profiles = _profiles.where((p) => p.username.toLowerCase().contains(search.toLowerCase()) || p.fullName.toLowerCase().contains(search.toLowerCase())).toList();
     }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> fetchMyProfile() async {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
 
-    try {
-      final response = await _apiService.get('/profiles/me/');
-      if (response.statusCode == 200) {
-        _myProfile = Profile.fromJson(jsonDecode(response.body));
-        return true;
-      } else if (response.statusCode == 401) {
-        // Token is invalid or expired
-        await _apiService.clearToken();
-        _myProfile = null;
-      } else {
-        debugPrint('Profile fetch failed with status: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
-      }
-    } catch (e) {
-      debugPrint('Error fetching my profile: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-    return false;
+    await Future.delayed(const Duration(milliseconds: 500));
+    _myProfile = Profile(
+      id: 1,
+      user: 1,
+      username: 'jasim_dev',
+      email: 'jasim@example.com',
+      fullName: 'Jasim VP',
+      phone: '1234567890',
+      bio: 'Flutter Developer | UI Enthusiast',
+      profession: 'Software Engineer',
+      followerCount: '120',
+      repoCount: '15',
+      connectionStatus: 'following',
+    );
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
   }
 
   Future<Profile?> fetchProfileById(int id) async {
-    try {
-      final response = await _apiService.get('/profiles/$id/');
-      if (response.statusCode == 200) {
-        return Profile.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error fetching profile: $e');
-    }
-    return null;
+    await Future.delayed(const Duration(milliseconds: 300));
+    return Profile(
+      id: id,
+      user: id,
+      username: 'user_$id',
+      email: 'user$id@example.com',
+      fullName: 'User $id',
+      phone: '1234567890',
+      bio: 'Hello from mock user $id',
+      profession: 'Developer',
+      followerCount: '100',
+      repoCount: '5',
+      connectionStatus: 'none',
+    );
   }
 
   Future<bool> updateProfile(
     Map<String, dynamic> data, {
     http.MultipartFile? profilePic,
   }) async {
-    try {
-      http.Response response;
-
-      if (profilePic != null) {
-        // Convert map values to strings for multipart fields
-        final Map<String, String> fields = data.map(
-          (key, value) => MapEntry(key, value.toString()),
-        );
-        response = await _apiService.patchMultipart(
-          '/profiles/me/',
-          fields,
-          files: profilePic != null ? [profilePic] : null,
-        );
-      } else {
-        response = await _apiService.patch('/profiles/me/', data);
-      }
-
-      if (response.statusCode == 200) {
-        _myProfile = Profile.fromJson(jsonDecode(response.body));
-        notifyListeners();
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Error updating profile: $e');
+    await Future.delayed(const Duration(seconds: 1));
+    if (_myProfile != null) {
+      _myProfile = _myProfile!.copyWith(
+        fullName: data['full_name']?.toString(),
+        phone: data['phone']?.toString(),
+        bio: data['bio']?.toString(),
+        profession: data['profession']?.toString(),
+      );
+      notifyListeners();
     }
-    return false;
+    return true;
   }
 
   Future<String?> followProfile(int id) async {
-    try {
-      final response = await _apiService.post('/profiles/$id/follow/', {});
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final String detail = (data['detail'] ?? '').toString();
-
-        // Fetch updated profile to get new follower count
-        final updatedProfile = await fetchProfileById(id);
-        if (updatedProfile != null) {
-          final index = _profiles.indexWhere((p) => p.id == id);
-          if (index != -1) {
-            _profiles[index] = updatedProfile;
-            notifyListeners();
-          }
-        }
-        return detail;
-      }
-    } catch (e) {
-      debugPrint('Error following profile: $e');
+    await Future.delayed(const Duration(milliseconds: 500));
+    final index = _profiles.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      final isFollowing = _profiles[index].connectionStatus == 'following';
+      _profiles[index] = _profiles[index].copyWith(
+        connectionStatus: isFollowing ? 'none' : 'following',
+        followerCount: (int.parse(_profiles[index].followerCount) + (isFollowing ? -1 : 1)).toString(),
+      );
+      notifyListeners();
+      return isFollowing ? 'Unfollowed' : 'Following';
     }
-    return null;
+    return 'Success';
   }
 
   Future<void> fetchConnections() async {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
 
-    try {
-      final response = await _apiService.get('/connections/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        _connections = data
-            .map((json) => ConnectionRequest.fromJson(json))
-            .toList();
-      }
-    } catch (e) {
-      debugPrint('Error fetching connections: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    await Future.delayed(const Duration(milliseconds: 500));
+    _connections = [
+      ConnectionRequest(
+        id: 1,
+        sender: 2,
+        senderName: 'Alice Smith',
+        receiver: 1,
+        receiverName: 'Jasim VP',
+        status: 'PENDING',
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+    ];
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> sendConnectionRequest(int receiverId) async {
-    try {
-      final response = await _apiService.post('/connections/', {
-        'receiver': receiverId,
-      });
-      if (response.statusCode == 201) {
-        fetchConnections();
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Error sending connection request: $e');
-    }
-    return false;
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
   }
 
   Future<bool> respondToConnection(int id, String status) async {
-    try {
-      final response = await _apiService.post('/connections/$id/respond/', {
-        'status': status,
-      });
-      if (response.statusCode == 200) {
-        fetchConnections();
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Error responding to connection: $e');
-    }
-    return false;
+    await Future.delayed(const Duration(milliseconds: 500));
+    _connections.removeWhere((c) => c.id == id);
+    notifyListeners();
+    return true;
   }
 
   Future<Profile?> createProfile(Map<String, dynamic> data) async {
-    try {
-      final response = await _apiService.post('/profiles/', data);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return Profile.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error creating profile: $e');
-    }
-    return null;
+    await Future.delayed(const Duration(seconds: 1));
+    return Profile.fromJson(data);
   }
 
   Future<Profile?> updateProfileById(int id, Map<String, dynamic> data) async {
-    try {
-      final response = await _apiService.put('/profiles/$id/', data);
-      if (response.statusCode == 200) {
-        return Profile.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error updating profile $id: $e');
-    }
+    await Future.delayed(const Duration(seconds: 1));
     return null;
   }
 
@@ -214,59 +196,26 @@ class ProfileService extends ChangeNotifier {
     int id,
     Map<String, dynamic> data,
   ) async {
-    try {
-      final response = await _apiService.patch('/profiles/$id/', data);
-      if (response.statusCode == 200) {
-        return Profile.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error partial updating profile $id: $e');
-    }
+    await Future.delayed(const Duration(seconds: 1));
     return null;
   }
 
   Future<bool> deleteProfileById(int id) async {
-    try {
-      final response = await _apiService.delete('/profiles/$id/');
-      return response.statusCode == 204 || response.statusCode == 200;
-    } catch (e) {
-      debugPrint('Error deleting profile $id: $e');
-      return false;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return true;
   }
 
   Future<bool> connectWithProfile(int id) async {
-    try {
-      final response = await _apiService.post('/profiles/$id/connect/', {});
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      debugPrint('Error connecting with profile $id: $e');
-      return false;
-    }
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
   }
 
   Future<List<Profile>> fetchTaggableUsers() async {
-    try {
-      final response = await _apiService.get('/profiles/taggable_users/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Profile.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint('Error fetching taggable users: $e');
-    }
-    return [];
+    await Future.delayed(const Duration(milliseconds: 500));
+    return _profiles;
   }
 
   Future<ConnectionRequest?> fetchConnectionById(int id) async {
-    try {
-      final response = await _apiService.get('/connections/$id/');
-      if (response.statusCode == 200) {
-        return ConnectionRequest.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error fetching connection $id: $e');
-    }
     return null;
   }
 
@@ -274,14 +223,6 @@ class ProfileService extends ChangeNotifier {
     int id,
     Map<String, dynamic> data,
   ) async {
-    try {
-      final response = await _apiService.put('/connections/$id/', data);
-      if (response.statusCode == 200) {
-        return ConnectionRequest.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error updating connection $id: $e');
-    }
     return null;
   }
 
@@ -289,25 +230,19 @@ class ProfileService extends ChangeNotifier {
     int id,
     Map<String, dynamic> data,
   ) async {
-    try {
-      final response = await _apiService.patch('/connections/$id/', data);
-      if (response.statusCode == 200) {
-        return ConnectionRequest.fromJson(jsonDecode(response.body));
-      }
-    } catch (e) {
-      debugPrint('Error partial updating connection $id: $e');
-    }
     return null;
   }
 
   Future<bool> deleteConnectionById(int id) async {
-    try {
-      final response = await _apiService.delete('/connections/$id/');
-      return response.statusCode == 204 || response.statusCode == 200;
-    } catch (e) {
-      debugPrint('Error deleting connection $id: $e');
-      return false;
-    }
+    return true;
+  }
+
+  void clear() {
+    _myProfile = null;
+    _profiles = [];
+    _connections = [];
+    _isLoading = false;
+    notifyListeners();
   }
 
   void clear() {

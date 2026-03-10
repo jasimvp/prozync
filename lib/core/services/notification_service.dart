@@ -17,59 +17,65 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> fetchNotifications() async {
     _isLoading = true;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
-    try {
-      final response = await _apiService.get('/notifications/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        _notifications = data
-            .map((json) => NotificationModel.fromJson(json))
-            .toList();
-      }
-    } catch (e) {
-      debugPrint('Error fetching notifications: $e');
-    } finally {
-      _isLoading = false;
+    await Future.delayed(const Duration(milliseconds: 500));
+    _notifications = [
+      NotificationModel(
+        id: 1,
+        sender: 2,
+        senderName: 'Alice Smith',
+        receiver: 1,
+        status: 'LIKE',
+        post: 1,
+        message: 'Alice Smith liked your post',
+        isRead: false,
+        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+      ),
+      NotificationModel(
+        id: 2,
+        sender: 3,
+        senderName: 'Bob Builder',
+        receiver: 1,
+        status: 'FOLLOW',
+        message: 'Bob Builder started following you',
+        isRead: true,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      ),
+    ];
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> markAsRead(int id) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final index = _notifications.indexWhere((n) => n.id == id);
+    if (index != -1) {
+      _notifications[index] = NotificationModel(
+        id: _notifications[index].id,
+        sender: _notifications[index].sender,
+        senderName: _notifications[index].senderName,
+        receiver: _notifications[index].receiver,
+        status: _notifications[index].status,
+        post: _notifications[index].post,
+        project: _notifications[index].project,
+        message: _notifications[index].message,
+        senderProfilePic: _notifications[index].senderProfilePic,
+        isRead: true,
+        createdAt: _notifications[index].createdAt,
+      );
       notifyListeners();
     }
   }
 
-  Future<void> markAsRead(int id) async {
-    try {
-      // Assuming GET to specific ID marks it as read or there's a specific logic
-      final response = await _apiService.get('/notifications/$id/');
-      if (response.statusCode == 200) {
-        final index = _notifications.indexWhere((n) => n.id == id);
-        if (index != -1) {
-          // Update local state
-          fetchNotifications(); // Refresh list
-        }
-      }
-    } catch (e) {
-      debugPrint('Error marking notification as read: $e');
-    }
-  }
-
-  Future<bool> sendNotification({
-    required int receiver,
-    required String message,
-    int? projectId,
+  Future<void> sendNotification({
+    required int receiverId,
+    required String status,
     int? postId,
+    int? projectId,
+    required String message,
   }) async {
-    try {
-      final body = <String, dynamic>{'receiver': receiver, 'message': message};
-      if (projectId != null) body['project'] = projectId;
-      if (postId != null) body['post'] = postId;
-
-      final response = await _apiService.post('/notifications/', body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('Notification sent to receiver $receiver');
-        return true;
-      }
-      debugPrint(
-        'Failed to send notification: ${response.statusCode} ${response.body}',
-      );
       return false;
     } catch (e) {
       debugPrint('Error sending notification: $e');

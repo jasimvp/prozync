@@ -146,144 +146,185 @@ class ChatService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error fetching messages: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    Future.microtask(() => notifyListeners());
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    _messages = [
+      Message(
+        id: 1,
+        senderId: otherUserId,
+        senderName: 'Other User',
+        receiverId: 1, // Assuming current user ID is 1 for mock
+        receiverName: 'jasim_dev',
+        text: 'Hello!',
+        isRead: true,
+        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+        isMe: false,
+      ),
+      Message(
+        id: 2,
+        senderId: 1,
+        senderName: 'jasim_dev',
+        receiverId: otherUserId,
+        receiverName: 'Other User',
+        text: 'Hi there! How can I help?',
+        isRead: true,
+        createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
+        isMe: true,
+      ),
+      Message(
+        id: 3,
+        senderId: otherUserId,
+        senderName: 'Other User',
+        receiverId: 1,
+        receiverName: 'jasim_dev',
+        text: 'I was wondering about the Firebase migration...',
+        isRead: false,
+        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+        isMe: false,
+      ),
+    ];
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> sendMessage(int receiverId, String text) async {
-    try {
-      final response = await _apiService.post('/messages/', {
-        'receiver': receiverId,
-        'message': text,
-        'is_read': false, // Default
-      });
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        // Ensure we have the current user ID to correctly identify 'isMe'
-        if (ProfileService().myProfile == null) {
-          await ProfileService().fetchMyProfile();
-        }
-        final currentUserId = ProfileService().myProfile?.user ?? 0;
-
-        final newMessage = Message.fromJson(
-          jsonDecode(response.body),
-          currentUserId,
-        );
-        _currentMessages.add(newMessage); // Add locally
-        notifyListeners();
-
-        // Refresh chat list to update last message
-        fetchChats();
-        return true;
-      } else {
-        debugPrint(
-          'Send message failed: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      debugPrint('Error sending message: $e');
+    await Future.delayed(const Duration(milliseconds: 300));
+    final newMessage = Message(
+      id: DateTime.now().millisecondsSinceEpoch,
+      senderId: 1, // Mock current user ID
+      senderName: 'jasim_dev', // Mock current user name
+      receiverId: receiverId,
+      receiverName: _chats.firstWhere((c) => c.id == receiverId, orElse: () => ChatPreview(id: receiverId, otherUserName: 'Unknown', otherUserImage: '', lastMessage: '', lastMessageTime: DateTime.now(), unreadCount: 0)).otherUserName,
+      text: text,
+      isRead: false,
+      createdAt: DateTime.now(),
+      isMe: true,
+    );
+    _messages.add(newMessage);
+    
+    // Also update chat preview
+    final idx = _chats.indexWhere((c) => c.id == receiverId);
+    if (idx != -1) {
+      _chats[idx] = ChatPreview(
+        id: receiverId,
+        otherUserName: _chats[idx].otherUserName,
+        otherUserImage: _chats[idx].otherUserImage,
+        lastMessage: text,
+        lastMessageTime: DateTime.now(),
+        unreadCount: 0,
+      );
+    } else {
+      // If sending to a new user not in chat list, add a new preview
+      _chats.insert(0, ChatPreview(
+        id: receiverId,
+        otherUserName: 'New User $receiverId', // Placeholder
+        otherUserImage: 'https://ui-avatars.com/api/?name=New+User&background=003366&color=fff',
+        lastMessage: text,
+        lastMessageTime: DateTime.now(),
+        unreadCount: 0,
+      ));
     }
-    return false;
+
+    notifyListeners();
+    return true;
   }
 
-  Future<void> markConversationAsRead(int otherUserId) async {
-    bool changed = false;
-    final List<int> toMarkOnServer = [];
-
-    // 1. Update local messages state
-    for (int i = 0; i < _currentMessages.length; i++) {
-      final msg = _currentMessages[i];
-      if (!msg.isMe && !msg.isRead && msg.senderId == otherUserId) {
-        _readMessageIds.add(msg.id);
-        _currentMessages[i] = Message(
-          id: msg.id,
-          senderId: msg.senderId,
-          senderName: msg.senderName,
-          receiverId: msg.receiverId,
-          receiverName: msg.receiverName,
-          text: msg.text,
-          isRead: true,
-          createdAt: msg.createdAt,
-          isMe: msg.isMe,
-        );
-        toMarkOnServer.add(msg.id);
-        changed = true;
-      }
-    }
-
-    // 2. Update the chat preview in the list
-    final chatIndex = _chats.indexWhere((c) => c.id == otherUserId);
-    if (chatIndex != -1) {
-      if (_chats[chatIndex].unreadCount > 0) {
-        final chat = _chats[chatIndex];
-        _chats[chatIndex] = ChatPreview(
-          id: chat.id,
-          otherUserName: chat.otherUserName,
-          otherUserImage: chat.otherUserImage,
-          lastMessage: chat.lastMessage,
-          lastMessageTime: chat.lastMessageTime,
-          unreadCount: 0,
-        );
-        changed = true;
-      }
-    }
-
-    if (changed) {
+  Future<void> markConversationAsRead(int otherUserId) async { // Renamed from markConversationsAsRead to match original signature
+    await Future.delayed(const Duration(milliseconds: 300));
+    final idx = _chats.indexWhere((c) => c.id == otherUserId); // Parameter name adjusted
+    if (idx != -1) {
+      _chats[idx] = ChatPreview(
+        id: otherUserId, // Parameter name adjusted
+        otherUserName: _chats[idx].otherUserName,
+        otherUserImage: _chats[idx].otherUserImage,
+        lastMessage: _chats[idx].lastMessage,
+        lastMessageTime: _chats[idx].lastMessageTime,
+        unreadCount: 0,
+      );
       notifyListeners();
     }
-
-    // 3. Mark on server
-    for (var id in toMarkOnServer) {
-      try {
-        await _apiService.patch('/messages/$id/', {'is_read': true});
-      } catch (e) {
-        debugPrint('Error marking message $id as read: $e');
+    // Also mark messages in the current conversation as read
+    for (int i = 0; i < _messages.length; i++) {
+      if (!_messages[i].isMe && !_messages[i].isRead) {
+        _messages[i] = Message(
+          id: _messages[i].id,
+          senderId: _messages[i].senderId,
+          senderName: _messages[i].senderName,
+          receiverId: _messages[i].receiverId,
+          receiverName: _messages[i].receiverName,
+          text: _messages[i].text,
+          isRead: true,
+          createdAt: _messages[i].createdAt,
+          isMe: _messages[i].isMe,
+        );
       }
     }
+    notifyListeners();
   }
 
   Future<Message?> fetchMessageById(int id) async {
-    try {
-      final response = await _apiService.get('/messages/$id/');
-      if (response.statusCode == 200) {
-        final currentUserId = ProfileService().myProfile?.user ?? 0;
-        return Message.fromJson(jsonDecode(response.body), currentUserId);
-      }
-    } catch (e) {
-      debugPrint('Error fetching message $id: $e');
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _messages.firstWhere((msg) => msg.id == id, orElse: () => null);
+  }
+
+  Future<Message?> updateMessageById(int id, Map<String, dynamic> data) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _messages.indexWhere((msg) => msg.id == id);
+    if (index != -1) {
+      final original = _messages[index];
+      _messages[index] = Message(
+        id: original.id,
+        senderId: original.senderId,
+        senderName: original.senderName,
+        receiverId: original.receiverId,
+        receiverName: original.receiverName,
+        text: data['text'] as String? ?? original.text,
+        isRead: data['is_read'] as bool? ?? original.isRead,
+        createdAt: original.createdAt,
+        isMe: original.isMe,
+      );
+      notifyListeners();
+      return _messages[index];
     }
     return null;
   }
 
-  Future<Message?> updateMessageById(int id, Map<String, dynamic> data) async {
-    try {
-      final response = await _apiService.put('/messages/$id/', data);
-      if (response.statusCode == 200) {
-        final currentUserId = ProfileService().myProfile?.user ?? 0;
-        return Message.fromJson(jsonDecode(response.body), currentUserId);
-      }
-    } catch (e) {
-      debugPrint('Error updating message $id: $e');
+  Future<Message?> partialUpdateMessageById(int id, Map<String, dynamic> data) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _messages.indexWhere((msg) => msg.id == id);
+    if (index != -1) {
+      final original = _messages[index];
+      _messages[index] = Message(
+        id: original.id,
+        senderId: original.senderId,
+        senderName: original.senderName,
+        receiverId: original.receiverId,
+        receiverName: original.receiverName,
+        text: data['text'] as String? ?? original.text,
+        isRead: data['is_read'] as bool? ?? original.isRead,
+        createdAt: original.createdAt,
+        isMe: original.isMe,
+      );
+      notifyListeners();
+      return _messages[index];
     }
     return null;
   }
 
   Future<bool> deleteMessageById(int id) async {
-    try {
-      final response = await _apiService.delete('/messages/$id/');
-      return response.statusCode == 204 || response.statusCode == 200;
-    } catch (e) {
-      debugPrint('Error deleting message $id: $e');
-      return false;
+    await Future.delayed(const Duration(milliseconds: 100));
+    final initialLength = _messages.length;
+    _messages.removeWhere((msg) => msg.id == id);
+    if (_messages.length < initialLength) {
+      notifyListeners();
+      return true;
     }
+    return false;
   }
 
   Future<List<Message>> fetchConversation(int otherUserId) async {
-    try {
-      final response = await _apiService.get(
-        '/messages/conversation/?user_id=$otherUserId',
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);

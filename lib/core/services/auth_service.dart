@@ -7,124 +7,35 @@ class AuthService {
   final ApiService _apiService = ApiService();
 
   Future<Map<String, dynamic>> login(String username, String password) async {
-    try {
-      final response = await _apiService.post('/auth/login/', {
-        'username': username,
-        'password': password,
-      }, isUrlEncoded: true);
-
-      if (response.statusCode == 200) {
-        final token = AuthToken.fromJson(jsonDecode(response.body));
-        await _apiService.saveToken(token.token);
-        return {'success': true, 'token': token};
-      } else {
-        String message = 'Login failed';
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData is Map) {
-            message =
-                errorData['detail'] ??
-                errorData['message'] ??
-                errorData.values.first.toString();
-          }
-        } catch (_) {
-          message = 'Server error: ${response.statusCode}';
-        }
-        return {'success': false, 'message': message};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error'};
-    }
+    // Mock successful login
+    await Future.delayed(const Duration(seconds: 1));
+    await _apiService.saveToken('mock_token_12345');
+    return {
+      'success': true,
+      'token': AuthToken(token: 'mock_token_12345'),
+    };
   }
 
   Future<Map<String, dynamic>> verifySignupOtp(String email, String otp) async {
-    try {
-      final response = await _apiService.post('/auth/verify-signup-otp/', {
-        'email': email,
-        'otp': otp,
-      });
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'success': true};
-      } else {
-        String message = 'Invalid OTP. Please try again.';
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData is Map) {
-            message =
-                errorData['detail'] ??
-                errorData['message'] ??
-                errorData['otp'] ??
-                errorData.values.first.toString();
-          }
-        } catch (_) {}
-        return {'success': false, 'message': message};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error. Please check your connection.',
-      };
-    }
+    // Mock OTP verification
+    await Future.delayed(const Duration(seconds: 1));
+    return {'success': true};
   }
 
   Future<Map<String, dynamic>> signup(Map<String, dynamic> data) async {
-    try {
-      final response = await _apiService.post('/auth/signup/', {
-        'username': data['username'],
-        'email': data['email'],
-        'password': data['password'],
-        'full_name': data['full_name'] ?? data['username'],
-      });
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'success': true};
-      } else {
-        String errorMessage = 'Signup failed';
-        try {
-          if (response.body.isNotEmpty) {
-            final errorData = jsonDecode(response.body);
-            if (errorData is Map) {
-              errorMessage =
-                  errorData['detail'] ??
-                  errorData['message'] ??
-                  errorData.values.first.toString();
-            }
-          }
-        } catch (_) {
-          errorMessage = 'Server error: ${response.statusCode}';
-        }
-        return {'success': false, 'message': errorMessage};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network error'};
-    }
+    // Mock signup
+    await Future.delayed(const Duration(seconds: 1));
+    return {'success': true};
   }
 
   Future<bool> forgotPassword(String email) async {
-    try {
-      final response = await _apiService.post('/auth/forgot-password/', {
-        'email': email,
-      });
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      debugPrint('Forgot Password Error: $e');
-      return false;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return true;
   }
 
   Future<bool> resetPassword(Map<String, dynamic> data) async {
-    try {
-      final response = await _apiService.post('/auth/reset-password/', {
-        'email': data['email'],
-        'otp': data['otp'],
-        'new_password': data['new_password'],
-      });
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      debugPrint('Reset Password Error: $e');
-      return false;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return true;
   }
 
   Future<bool> changePassword({
@@ -132,22 +43,11 @@ class AuthService {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    try {
-      final response = await _apiService.post('/auth/change-password/', {
-        'current_password': currentPassword,
-        'new_password': newPassword,
-        'confirm_password': confirmPassword,
-      });
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      debugPrint('Change Password Error: $e');
-      return false;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return true;
   }
 
   Future<void> logout() async {
-    // Backend doesn't have a logout endpoint currently,
-    // so we just clear the token locally.
     await _apiService.clearToken();
   }
 

@@ -54,75 +54,47 @@ class ApiService {
     if (isUrlEncoded) {
       final bodyMap = Map<String, String>.from(body);
       final encodedBody = bodyMap.entries
-          .map(
-            (e) =>
-                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
-          )
-          .join('&');
+    debugPrint('ApiService.get called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
+  }
 
-      print('POST Request (form): $url');
-      print('POST Body (form): $encodedBody');
-
-      final resp = await http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'Accept': 'application/json',
-            },
-            body: encodedBody,
-          )
-          .timeout(const Duration(seconds: 60));
-
-      print('POST Response Status: ${resp.statusCode}');
-      print('POST Response Body: ${resp.body}');
-      return resp;
-    }
-
-    print('POST Request: $url');
-    print('POST Body: ${jsonEncode(body)}');
-
-    final response = await http
-        .post(url, headers: _getHeaders(token), body: jsonEncode(body))
-        .timeout(const Duration(seconds: 60));
-
-    print('POST Response Status: ${response.statusCode}');
-    print('POST Response Body: ${response.body}');
-    return response;
+  Future<http.Response> post(String endpoint, dynamic body,
+      {bool isUrlEncoded = false}) async {
+    debugPrint('ApiService.post called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
   }
 
   Future<http.Response> put(String endpoint, dynamic body) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http
-        .put(url, headers: _getHeaders(token), body: jsonEncode(body))
-        .timeout(const Duration(seconds: 60));
+    debugPrint('ApiService.put called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
   }
 
   Future<http.Response> patch(String endpoint, dynamic body) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http
-        .patch(url, headers: _getHeaders(token), body: jsonEncode(body))
-        .timeout(const Duration(seconds: 60));
+    debugPrint('ApiService.patch called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
+  }
+
+  Future<http.Response> delete(String endpoint) async {
+    debugPrint('ApiService.delete called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
   }
 
   Future<http.Response> postMultipart(
-    String endpoint,
-    Map<String, String> fields, {
-    List<http.MultipartFile>? files,
-  }) async {
-    return _sendMultipart('POST', endpoint, fields, files: files);
+      String endpoint, Map<String, String> fields,
+      {List<http.MultipartFile>? files}) async {
+    debugPrint('ApiService.postMultipart called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
   }
 
   Future<http.Response> patchMultipart(
-    String endpoint,
-    Map<String, String> fields, {
-    List<http.MultipartFile>? files,
-  }) async {
-    return _sendMultipart('PATCH', endpoint, fields, files: files);
+      String endpoint, Map<String, String> fields,
+      {List<http.MultipartFile>? files}) async {
+    debugPrint('ApiService.patchMultipart called for $endpoint (BLOCKED)');
+    return _mockNetworkCall();
   }
 
+  // The _sendMultipart method is kept as it is a private helper,
+  // but its public callers (postMultipart, patchMultipart) are now mocked.
   Future<http.Response> _sendMultipart(
     String method,
     String endpoint,
