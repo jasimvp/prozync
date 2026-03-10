@@ -33,7 +33,6 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
           if (_projectService.isLoading && invitations.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (invitations.isEmpty) {
             return Center(
               child: Column(
