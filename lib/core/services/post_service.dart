@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
-
 import 'api_service.dart';
+import 'profile_service.dart';
 
 class PostService extends ChangeNotifier {
   static final PostService _instance = PostService._internal();
@@ -46,9 +46,20 @@ class PostService extends ChangeNotifier {
     http.MultipartFile? imageFile,
   }) async {
     try {
+      // Backend requires an explicit `user` field, using the auth user.
+      if (ProfileService().myProfile == null) {
+        await ProfileService().fetchMyProfile();
+      }
+      final currentUserId = ProfileService().myProfile?.user;
+      if (currentUserId == null) {
+        debugPrint('Error creating post: no authenticated user found');
+        return null;
+      }
+
       final fields = {
         'content': content,
         if (projectId != null) 'project': projectId.toString(),
+        'user': currentUserId.toString(),
       };
 
       final response = await _apiService.postMultipart(
