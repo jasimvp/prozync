@@ -244,12 +244,4 @@ class ProfileService extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
-
-  void clear() {
-    _myProfile = null;
-    _profiles = [];
-    _connections = [];
-    _isLoading = false;
-    notifyListeners();
-  }
 }

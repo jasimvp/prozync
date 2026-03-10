@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../constants.dart';
 
 class ApiService {
@@ -29,31 +30,17 @@ class ApiService {
       'Accept': 'application/json',
     };
     if (token != null) {
-      // Backend uses DRF-style token auth: "Token <key>"
       headers['Authorization'] = 'Token $token';
     }
     return headers;
   }
 
-  Future<http.Response> get(String endpoint) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http
-        .get(url, headers: _getHeaders(token))
-        .timeout(const Duration(seconds: 60));
+  // Mock network call helper
+  Future<http.Response> _mockNetworkCall() async {
+    return http.Response(jsonEncode({'detail': 'Backend decoupled. Use mock services.'}), 404);
   }
 
-  Future<http.Response> post(
-    String endpoint,
-    dynamic body, {
-    bool isUrlEncoded = false,
-  }) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-
-    if (isUrlEncoded) {
-      final bodyMap = Map<String, String>.from(body);
-      final encodedBody = bodyMap.entries
+  Future<http.Response> get(String endpoint) async {
     debugPrint('ApiService.get called for $endpoint (BLOCKED)');
     return _mockNetworkCall();
   }
@@ -92,54 +79,5 @@ class ApiService {
     debugPrint('ApiService.patchMultipart called for $endpoint (BLOCKED)');
     return _mockNetworkCall();
   }
-
-  // The _sendMultipart method is kept as it is a private helper,
-  // but its public callers (postMultipart, patchMultipart) are now mocked.
-  Future<http.Response> _sendMultipart(
-    String method,
-    String endpoint,
-    Map<String, String> fields, {
-    List<http.MultipartFile>? files,
-  }) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    final request = http.MultipartRequest(method, url);
-
-    request.headers.addAll({
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    });
-
-    request.fields.addAll(fields);
-    if (files != null) {
-      request.files.addAll(files);
-    }
-
-    print('MULTIPART $method Request: $url');
-    print('MULTIPART Fields: $fields');
-    if (files != null) {
-      for (var file in files) {
-        print(
-          'MULTIPART File: ${file.field} - ${file.filename} (${file.length} bytes)',
-        );
-      }
-    }
-
-    final streamedResponse = await request.send().timeout(
-      const Duration(seconds: 300),
-    );
-    final response = await http.Response.fromStream(streamedResponse);
-
-    print('MULTIPART Response Status: ${response.statusCode}');
-    print('MULTIPART Response Body: ${response.body}');
-    return response;
-  }
-
-  Future<http.Response> delete(String endpoint) async {
-    final token = await getToken();
-    final url = Uri.parse('${AppConstants.apiBase}$endpoint');
-    return await http
-        .delete(url, headers: _getHeaders(token))
-        .timeout(const Duration(seconds: 60));
-  }
+}
 }

@@ -364,16 +364,4 @@ class ProjectService extends ChangeNotifier {
     _isMyReposLoading = false;
     notifyListeners();
   }
-
-  void clear() {
-    _projects = [];
-    _myRepos = [];
-    _pinnedProjects = [];
-    _savedProjects = [];
-    _invitations = [];
-    _isLoading = false;
-    _isPinnedLoading = false;
-    _isMyReposLoading = false;
-    notifyListeners();
-  }
 }

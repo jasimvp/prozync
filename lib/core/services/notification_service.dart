@@ -76,11 +76,8 @@ class NotificationService extends ChangeNotifier {
     int? projectId,
     required String message,
   }) async {
-      return false;
-    } catch (e) {
-      debugPrint('Error sending notification: $e');
-      return false;
-    }
+    // Mock sending notification
+    await Future.delayed(const Duration(milliseconds: 200));
   }
 
   void clear() {

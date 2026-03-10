@@ -14,96 +14,74 @@ class PostService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   List<Post> _posts = [];
   List<Post> _savedPosts = [];
+  List<Comment> _comments = [];
   bool _isLoading = false;
   bool _isSavedLoading = false;
 
   List<Post> get posts => _posts;
   List<Post> get savedPosts => _savedPosts;
+  List<Comment> get comments => _comments;
   bool get isLoading => _isLoading;
   bool get isSavedLoading => _isSavedLoading;
 
-  Future<void> fetchPosts() async {
+  Future<void> fetchPosts({String? search, int? projectId}) async {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
 
-    try {
-      final response = await _apiService.get('/posts/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        _posts = data.map((json) => Post.fromJson(json)).toList();
-      }
-    } catch (e) {
-      debugPrint('Error fetching posts: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 500));
+    _posts = [
+      Post(
+        id: 1,
+        user: 1,
+        username: 'jasim_dev',
+        fullName: 'Jasim VP',
+        content: 'Check out my new project built with Flutter! 🚀 #prozync #flutter',
+        likeCount: 15,
+        commentCount: 2,
+        isLiked: true,
+        isSaved: true,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      ),
+      Post(
+        id: 2,
+        user: 2,
+        username: 'alice_smith',
+        fullName: 'Alice Smith',
+        content: 'Just finished the backend API for my e-ecommerce site. Feeling great!',
+        likeCount: 42,
+        commentCount: 5,
+        isLiked: false,
+        isSaved: false,
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+    ];
+
+    if (search != null && search.isNotEmpty) {
+      _posts = _posts.where((p) => p.content.toLowerCase().contains(search.toLowerCase()) || p.username.toLowerCase().contains(search.toLowerCase())).toList();
     }
+    
+    if (projectId != null) {
+      _posts = _posts.where((p) => p.project == projectId).toList();
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
-  /// Returns {'success': true, 'post': Post} or {'success': false, 'message': String}.
-  Future<Map<String, dynamic>> createPost(
+  Future<void> fetchMyPosts() async {
+    _isLoading = true;
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 500));
+    _posts = _posts.where((p) => p.user == 1).toList();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> createPost(
     String content, {
     int? projectId,
     http.MultipartFile? imageFile,
   }) async {
-    try {
-      if (ProfileService().myProfile == null) {
-        await ProfileService().fetchMyProfile();
-      }
-      final currentUserId = ProfileService().myProfile?.user;
-      if (currentUserId == null) {
-        return {'success': false, 'message': 'Not logged in. Please sign in again.'};
-      }
-
-      final fields = <String, String>{
-        'content': content,
-        'user': currentUserId.toString(),
-      };
-      if (projectId != null) {
-        fields['project'] = projectId.toString();
-      }
-
-      final response = await _apiService.postMultipart(
-        '/posts/',
-        fields,
-        files: imageFile != null ? [imageFile] : null,
-      );
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final post = Post.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
-        _posts.insert(0, post);
-        notifyListeners();
-        return {'success': true, 'post': post};
-      }
-      // Surface Django validation/error message
-      String message = 'Failed to create post';
-      try {
-        final body = jsonDecode(response.body);
-        if (body is Map<String, dynamic>) {
-          final first = body.values.firstOrNull;
-          if (first is List && first.isNotEmpty) message = first.first.toString();
-          else if (first != null) message = first.toString();
-        }
-      } catch (_) {}
-      return {'success': false, 'message': message};
-    } catch (e) {
-      debugPrint('Error creating post: $e');
-      return {'success': false, 'message': 'Network error: $e'};
-    }
-  }
-
-  Future<void> likePost(int id) async {
-    final index = _posts.indexWhere((p) => p.id == id);
-    if (index == -1) return;
-
-    final originalPost = _posts[index];
-    final bool wasLiked = originalPost.isLiked;
-
-    // Optimistic Update
-    _posts[index] = originalPost.copyWith(
-      isLiked: !wasLiked,
-      likeCount: wasLiked
-          ? originalPost.likeCount - 1
     await Future.delayed(const Duration(seconds: 1));
     final newPost = Post(
       id: DateTime.now().millisecondsSinceEpoch,
@@ -141,7 +119,9 @@ class PostService extends ChangeNotifier {
     if (idx != -1) {
       _posts[idx] = _posts[idx].copyWith(isSaved: !_posts[idx].isSaved);
       if (_posts[idx].isSaved) {
-        _savedPosts.add(_posts[idx]);
+        if (!_savedPosts.any((p) => p.id == postId)) {
+          _savedPosts.insert(0, _posts[idx]);
+        }
       } else {
         _savedPosts.removeWhere((p) => p.id == postId);
       }
@@ -161,41 +141,42 @@ class PostService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchComments(int postId) async {
+  Future<List<Comment>> fetchComments(int postId) async {
     _isLoading = true;
     Future.microtask(() => notifyListeners());
 
     await Future.delayed(const Duration(milliseconds: 500));
-    _comments = [
+    final mockComments = [
       Comment(
         id: 1,
         user: 2,
         username: 'alice_smith',
-        fullName: 'Alice Smith',
         content: 'Wow, this looks amazing!',
+        post: postId,
         createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
       ),
       Comment(
         id: 2,
         user: 3,
         username: 'bob_builder',
-        fullName: 'Bob Builder',
         content: 'Great work dev!',
+        post: postId,
         createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
       ),
     ];
-
+    _comments = mockComments;
     _isLoading = false;
     notifyListeners();
+    return mockComments;
   }
 
-  Future<bool> addComment(int postId, String content) async {
+  Future<Comment?> addComment(int postId, String content) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final newComment = Comment(
       id: DateTime.now().millisecondsSinceEpoch,
       user: 1,
       username: 'jasim_dev',
-      fullName: 'Jasim VP',
+      post: postId,
       content: content,
       createdAt: DateTime.now(),
     );
@@ -208,23 +189,20 @@ class PostService extends ChangeNotifier {
     }
 
     notifyListeners();
-    return true;
+    return newComment;
   }
 
   Future<Post?> fetchPostById(int id) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return _posts.firstWhere((p) => p.id == id, orElse: () => _posts[0]);
+    return _posts.firstWhere((p) => p.id == id, orElse: () => _posts.isNotEmpty ? _posts[0] : throw Exception('Not found'));
   }
 
   Future<Post?> updatePost(int id, Map<String, dynamic> data) async {
-    // Mock implementation
     await Future.delayed(const Duration(milliseconds: 300));
     final index = _posts.indexWhere((p) => p.id == id);
     if (index != -1) {
-      // Simulate update by creating a new post with updated data
       final updatedPost = _posts[index].copyWith(
         content: data['content'] as String? ?? _posts[index].content,
-        // Add other fields as needed
       );
       _posts[index] = updatedPost;
       notifyListeners();
@@ -234,39 +212,21 @@ class PostService extends ChangeNotifier {
   }
 
   Future<Post?> partialUpdatePost(int id, Map<String, dynamic> data) async {
-    // Mock implementation
-    await Future.delayed(const Duration(milliseconds: 300));
-    final index = _posts.indexWhere((p) => p.id == id);
-    if (index != -1) {
-      // Simulate partial update
-      final updatedPost = _posts[index].copyWith(
-        content: data['content'] as String? ?? _posts[index].content,
-        // Add other fields as needed
-      );
-      _posts[index] = updatedPost;
-      notifyListeners();
-      return updatedPost;
-    }
-    return null;
+    return updatePost(id, data);
   }
 
   Future<bool> deletePost(int id) async {
-    try {
-      final response = await _apiService.delete('/posts/$id/');
-      if (response.statusCode == 204 || response.statusCode == 200) {
-        _posts.removeWhere((p) => p.id == id);
-        notifyListeners();
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Error deleting post: $e');
-    }
-    return false;
+    await Future.delayed(const Duration(seconds: 1));
+    _posts.removeWhere((p) => p.id == id);
+    _savedPosts.removeWhere((p) => p.id == id);
+    notifyListeners();
+    return true;
   }
 
   void clear() {
     _posts = [];
     _savedPosts = [];
+    _comments = [];
     _isLoading = false;
     notifyListeners();
   }
