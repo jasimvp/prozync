@@ -1,15 +1,13 @@
-import 'dart:io';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/foundation.dart';
-import '../constants.dart';
 
 class CloudinaryService {
   late CloudinaryPublic _cloudinary;
 
   CloudinaryService() {
     _cloudinary = CloudinaryPublic(
-      'drsfuj0is', // Replace with your Cloud Name
-      'prozync_preset', // Replace with your Upload Preset
+      'dlfto8vov', // Replace with your Cloud Name
+      'tripplanner_images', // Replace with your Upload Preset
       cache: false,
     );
   }

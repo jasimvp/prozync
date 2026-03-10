@@ -1,12 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:prozync/features/activity/activity_screen.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/features/activity/chat_list_screen.dart';
 import 'package:prozync/core/services/post_service.dart';
+import 'package:prozync/core/services/cloudinary_service.dart';
 import 'package:prozync/models/post_model.dart';
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
@@ -234,18 +235,31 @@ class _HomeScreenState extends State<HomeScreen> {
                             border: InputBorder.none,
                           ),
                           onChanged: (value) async {
-                            final cursorPosition = controller.selection.baseOffset;
+                            final cursorPosition =
+                                controller.selection.baseOffset;
                             if (cursorPosition <= 0) {
                               setModalState(() => showMentionList = false);
                               return;
                             }
 
-                            final textBeforeCursor = value.substring(0, cursorPosition);
-                            final lastAtIndex = textBeforeCursor.lastIndexOf('@');
+                            final textBeforeCursor = value.substring(
+                              0,
+                              cursorPosition,
+                            );
+                            final lastAtIndex = textBeforeCursor.lastIndexOf(
+                              '@',
+                            );
 
-                            if (lastAtIndex != -1 && !textBeforeCursor.substring(lastAtIndex).contains(' ')) {
-                              final query = textBeforeCursor.substring(lastAtIndex + 1);
-                              await ProfileService().fetchProfiles(search: query);
+                            if (lastAtIndex != -1 &&
+                                !textBeforeCursor
+                                    .substring(lastAtIndex)
+                                    .contains(' ')) {
+                              final query = textBeforeCursor.substring(
+                                lastAtIndex + 1,
+                              );
+                              await ProfileService().fetchProfiles(
+                                search: query,
+                              );
                               final myId = ProfileService().myProfile?.id;
                               setModalState(() {
                                 mentionResults = ProfileService().profiles
@@ -294,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                        
+
                         if (showMentionList)
                           Container(
                             constraints: const BoxConstraints(maxHeight: 200),
@@ -302,7 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.1),
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.05),
@@ -318,31 +334,54 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return ListTile(
                                   leading: CircleAvatar(
                                     radius: 15,
-                                    backgroundImage: NetworkImage(profile.fullProfilePic),
-                                    onBackgroundImageError: (e, s) => debugPrint('Mention avatar error'),
+                                    backgroundImage: NetworkImage(
+                                      profile.fullProfilePic,
+                                    ),
+                                    onBackgroundImageError: (e, s) =>
+                                        debugPrint('Mention avatar error'),
                                   ),
-                                  title: Text(profile.fullName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                                  subtitle: Text('@${profile.username}', style: const TextStyle(fontSize: 12)),
+                                  title: Text(
+                                    profile.fullName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '@${profile.username}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                   onTap: () {
                                     final text = controller.text;
-                                    final cursorPosition = controller.selection.baseOffset;
-                                    final textBeforeCursor = text.substring(0, cursorPosition);
-                                    final lastAtIndex = textBeforeCursor.lastIndexOf('@');
-                                    
+                                    final cursorPosition =
+                                        controller.selection.baseOffset;
+                                    final textBeforeCursor = text.substring(
+                                      0,
+                                      cursorPosition,
+                                    );
+                                    final lastAtIndex = textBeforeCursor
+                                        .lastIndexOf('@');
+
                                     final newText = text.replaceRange(
                                       lastAtIndex,
                                       cursorPosition,
                                       '@${profile.username} ',
                                     );
-                                    
-                                    controller.value = controller.value.copyWith(
-                                      text: newText,
-                                      selection: TextSelection.collapsed(
-                                        offset: lastAtIndex + profile.username.length + 2,
-                                      ),
+
+                                    controller.value = controller.value
+                                        .copyWith(
+                                          text: newText,
+                                          selection: TextSelection.collapsed(
+                                            offset:
+                                                lastAtIndex +
+                                                profile.username.length +
+                                                2,
+                                          ),
+                                        );
+
+                                    setModalState(
+                                      () => showMentionList = false,
                                     );
-                                    
-                                    setModalState(() => showMentionList = false);
                                   },
                                 );
                               },
@@ -378,19 +417,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final text = controller.text;
                                 final selection = controller.selection;
                                 final newText = text.replaceRange(
-                                  selection.start == -1 ? text.length : selection.start,
-                                  selection.end == -1 ? text.length : selection.end,
+                                  selection.start == -1
+                                      ? text.length
+                                      : selection.start,
+                                  selection.end == -1
+                                      ? text.length
+                                      : selection.end,
                                   '@',
                                 );
                                 controller.value = controller.value.copyWith(
                                   text: newText,
                                   selection: TextSelection.collapsed(
-                                    offset: (selection.start == -1 ? text.length : selection.start) + 1,
+                                    offset:
+                                        (selection.start == -1
+                                            ? text.length
+                                            : selection.start) +
+                                        1,
                                   ),
                                 );
-                                
+
                                 // Trigger user list
-                                await ProfileService().fetchProfiles(search: '');
+                                await ProfileService().fetchProfiles(
+                                  search: '',
+                                );
                                 final myId = ProfileService().myProfile?.id;
                                 setModalState(() {
                                   mentionResults = ProfileService().profiles
@@ -410,14 +459,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final text = controller.text;
                                 final selection = controller.selection;
                                 final newText = text.replaceRange(
-                                  selection.start == -1 ? text.length : selection.start,
-                                  selection.end == -1 ? text.length : selection.end,
+                                  selection.start == -1
+                                      ? text.length
+                                      : selection.start,
+                                  selection.end == -1
+                                      ? text.length
+                                      : selection.end,
                                   '#',
                                 );
                                 controller.value = controller.value.copyWith(
                                   text: newText,
                                   selection: TextSelection.collapsed(
-                                    offset: (selection.start == -1 ? text.length : selection.start) + 1,
+                                    offset:
+                                        (selection.start == -1
+                                            ? text.length
+                                            : selection.start) +
+                                        1,
                                   ),
                                 );
                               },
@@ -439,46 +496,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                         setModalState(() => isPosting = true);
 
-                                        http.MultipartFile? imageFile;
-                                        if (kIsWeb &&
-                                            selectedFileBytes != null) {
-                                          imageFile =
-                                              http.MultipartFile.fromBytes(
-                                                'image',
-                                                selectedFileBytes,
-                                                filename: selectedFileName,
-                                              );
-                                        } else if (!kIsWeb &&
+                                        String? imageUrl;
+                                        if (selectedFileBytes != null ||
                                             selectedFilePath != null) {
-                                          imageFile =
-                                              await http.MultipartFile.fromPath(
-                                                'image',
-                                                selectedFilePath!,
-                                              );
+                                          final cloudinary =
+                                              CloudinaryService();
+                                          if (kIsWeb &&
+                                              selectedFileBytes != null) {
+                                            imageUrl = await cloudinary
+                                                .uploadImage(
+                                                  selectedFileBytes,
+                                                  folder: 'posts',
+                                                );
+                                          } else if (!kIsWeb &&
+                                              selectedFilePath != null) {
+                                            imageUrl = await cloudinary
+                                                .uploadImage(
+                                                  File(selectedFilePath!),
+                                                  folder: 'posts',
+                                                );
+                                          }
                                         }
 
                                         final result = await _postService
                                             .createPost(
                                               controller.text,
-                                              imageFile: imageFile,
+                                              imageUrl: imageUrl,
                                             );
 
                                         if (!mounted) return;
                                         setModalState(() => isPosting = false);
-                                        final success = result['success'] == true;
+                                        final success =
+                                            result['success'] == true;
                                         if (success) {
                                           Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             const SnackBar(
                                               content: Text('Post published!'),
                                               backgroundColor: Colors.green,
                                             ),
                                           );
                                         } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                result['message'] ?? 'Failed to create post',
+                                                result['message'] ??
+                                                    'Failed to create post',
                                               ),
                                               backgroundColor: Colors.red,
                                             ),
@@ -553,7 +620,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundImage: NetworkImage(
                       'https://ui-avatars.com/api/?name=${post.username}&background=random',
                     ),
-                    onBackgroundImageError: (e, s) => debugPrint('Feed avatar error: $e'),
+                    onBackgroundImageError: (e, s) =>
+                        debugPrint('Feed avatar error: $e'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -647,13 +715,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: MentionText(
-                text: post.content,
-                style: const TextStyle(fontSize: 15, height: 1.5),
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: MentionText(
+              text: post.content,
+              style: const TextStyle(fontSize: 15, height: 1.5),
             ),
+          ),
           if (post.image != null)
             Container(
               height: 300,
@@ -666,7 +734,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 300,
                   color: Colors.grey[100],
                   child: const Center(
-                    child: Icon(Icons.broken_image_outlined, color: Colors.grey, size: 40),
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey,
+                      size: 40,
+                    ),
                   ),
                 ),
               ),
@@ -783,17 +855,22 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 14,
             color: Colors.grey,
           ),
-          if (post.project != null && ProfileService().myProfile?.id != post.user) ...[
+          if (post.project != null &&
+              ProfileService().myProfile?.id != post.user) ...[
             const SizedBox(width: 8),
             TextButton(
               onPressed: () async {
-                final success = await ProjectService().toggleInterested(post.project!);
+                final success = await ProjectService().toggleInterested(
+                  post.project!,
+                );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(success 
-                        ? 'Interest sent for this project!' 
-                        : 'Failed to send interest.'),
+                      content: Text(
+                        success
+                            ? 'Interest sent for this project!'
+                            : 'Failed to send interest.',
+                      ),
                       backgroundColor: success ? Colors.green : Colors.red,
                     ),
                   );
@@ -805,7 +882,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Interested', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Interested',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ],
@@ -1018,10 +1098,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                                backgroundImage: NetworkImage(
-                                  'https://ui-avatars.com/api/?name=${comment.username}&background=random',
-                                ),
-                                onBackgroundImageError: (e, s) => debugPrint('Comment avatar error: $e'),
+                              backgroundImage: NetworkImage(
+                                'https://ui-avatars.com/api/?name=${comment.username}&background=random',
+                              ),
+                              onBackgroundImageError: (e, s) =>
+                                  debugPrint('Comment avatar error: $e'),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -1046,10 +1127,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                         MentionText(
-                                           text: comment.content,
-                                           style: const TextStyle(fontSize: 14),
-                                         ),
+                                        MentionText(
+                                          text: comment.content,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
                                       ],
                                     ),
                                   ),

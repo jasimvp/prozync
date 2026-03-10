@@ -17,6 +17,7 @@ class OtherUserProfileScreen extends StatefulWidget {
   @override
   State<OtherUserProfileScreen> createState() => _OtherUserProfileScreenState();
 }
+
 class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   late Profile _currentProfile;
   bool isFollowing = false;
@@ -37,16 +38,18 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _fetchFullProfile({bool updateFollowStatus = true}) async {
     try {
-      final profile = await ProfileService().fetchProfileById(_currentProfile.id);
+      final profile = await ProfileService().fetchProfileById(
+        _currentProfile.id,
+      );
       if (profile != null && mounted) {
         setState(() {
           _currentProfile = profile;
-          
+
           if (updateFollowStatus) {
             final status = profile.connectionStatus.toLowerCase();
             isFollowing = status == 'following' || status == 'followed';
           }
-          
+
           _isLoadingProfile = false;
         });
       }
@@ -57,10 +60,14 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _loadUserProjects() async {
     try {
-      final projects = await ProjectService().getUserProjects(widget.profile.username);
+      final projects = await ProjectService().getUserProjects(
+        widget.profile.username,
+      );
       if (mounted) {
         setState(() {
-          userProjects = projects.where((p) => p.owner == widget.profile.user).toList();
+          userProjects = projects
+              .where((p) => p.owner == widget.profile.user)
+              .toList();
           isLoadingProjects = false;
         });
       }
@@ -110,7 +117,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Gradient Background
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -120,7 +126,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 ),
               ),
             ),
-            // Abstract Circles for style
             Positioned(
               top: -50,
               right: -50,
@@ -133,7 +138,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                 ),
               ),
             ),
-            // Profile Info
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -147,9 +151,13 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   child: CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(_currentProfile.fullProfilePic),
+                    backgroundImage: NetworkImage(
+                      _currentProfile.fullProfilePic,
+                    ),
                     onBackgroundImageError: (exception, stackTrace) {
-                      debugPrint('Error loading other user profile pic: $exception');
+                      debugPrint(
+                        'Error loading other user profile pic: $exception',
+                      );
                     },
                   ),
                 ),
@@ -181,7 +189,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Remote', // You might want to add location to Profile model if available
+                      'Remote',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 14,
@@ -206,43 +214,45 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: _isActionInProgress ? null : () async {
-                  setState(() {
-                    _isActionInProgress = true;
-                  });
+                onPressed: _isActionInProgress
+                    ? null
+                    : () async {
+                        setState(() {
+                          _isActionInProgress = true;
+                        });
 
-                  // Optimistic UI update
-                  bool previouslyFollowing = isFollowing;
-                  setState(() {
-                    isFollowing = !isFollowing;
-                  });
+                        bool previouslyFollowing = isFollowing;
+                        setState(() {
+                          isFollowing = !isFollowing;
+                        });
 
-                  final result = await ProfileService().followProfile(
-                    _currentProfile.id,
-                  );
-                  
-                  if (result != null && mounted) {
-                    // result will be "Followed" or "Unfollowed"
-                    setState(() {
-                      isFollowing = result.toLowerCase() == 'followed' || result.toLowerCase() == 'following';
-                      _currentProfile = _currentProfile.copyWith(
-                        connectionStatus: isFollowing ? 'following' : '',
-                      );
-                      _isActionInProgress = false;
-                    });
-                    // Refresh counts but DON'T let it overwrite our new status
-                    _fetchFullProfile(updateFollowStatus: false);
-                  } else if (mounted) {
-                    // Revert on failure
-                    setState(() {
-                      isFollowing = previouslyFollowing;
-                      _isActionInProgress = false;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to update follow status')),
-                    );
-                  }
-                },
+                        final result = await ProfileService().followProfile(
+                          _currentProfile.id,
+                        );
+
+                        if (result != null && mounted) {
+                          setState(() {
+                            isFollowing =
+                                result.toLowerCase() == 'followed' ||
+                                result.toLowerCase() == 'following';
+                            _currentProfile = _currentProfile.copyWith(
+                              connectionStatus: isFollowing ? 'following' : '',
+                            );
+                            _isActionInProgress = false;
+                          });
+                          _fetchFullProfile(updateFollowStatus: false);
+                        } else if (mounted) {
+                          setState(() {
+                            isFollowing = previouslyFollowing;
+                            _isActionInProgress = false;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to update follow status'),
+                            ),
+                          );
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isFollowing
                       ? Colors.grey[200]
@@ -337,9 +347,13 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             ),
           ),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, totalStars.toString(), 'Stars')),
+          Expanded(
+            child: _buildStatItem(context, totalStars.toString(), 'Stars'),
+          ),
           _buildVerticalDivider(),
-          Expanded(child: _buildStatItem(context, totalCollabs.toString(), 'Collabs')),
+          Expanded(
+            child: _buildStatItem(context, totalCollabs.toString(), 'Collabs'),
+          ),
         ],
       ),
     );
@@ -388,16 +402,16 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.grey.withOpacity(0.1)),
             ),
-              child: MentionText(
-                text: _currentProfile.bio.isNotEmpty
-                    ? _currentProfile.bio
-                    : 'No bio provided.',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 15,
-                  height: 1.5,
-                ),
+            child: MentionText(
+              text: _currentProfile.bio.isNotEmpty
+                  ? _currentProfile.bio
+                  : 'No bio provided.',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 15,
+                height: 1.5,
               ),
+            ),
           ),
         ],
       ),
@@ -437,11 +451,14 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.primaryColor,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                          color: AppTheme.primaryColor.withOpacity(0.3)),
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                      ),
                     ),
                   ),
                   child: Row(
@@ -507,14 +524,14 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             color: (project.isPrivate ? Colors.orange : Colors.blue)
                 .withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
-            image: project.coverImage != null
+            image: project.fullCoverImage.isNotEmpty
                 ? DecorationImage(
-                    image: NetworkImage(project.coverImage!),
+                    image: NetworkImage(project.fullCoverImage),
                     fit: BoxFit.cover,
                   )
                 : null,
           ),
-          child: project.coverImage == null
+          child: project.fullCoverImage.isEmpty
               ? Icon(
                   project.isPrivate ? Icons.lock_outline : Icons.code_rounded,
                   color: project.isPrivate ? Colors.orange : Colors.blue,
@@ -540,13 +557,17 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             if (ProfileService().myProfile?.id != project.owner)
               TextButton(
                 onPressed: () async {
-                  final success = await ProjectService().toggleInterested(project.id);
+                  final success = await ProjectService().toggleInterested(
+                    project.id,
+                  );
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(success 
-                          ? 'Interest sent for ${project.name}!' 
-                          : 'Failed to send interest.'),
+                        content: Text(
+                          success
+                              ? 'Interest sent for ${project.name}!'
+                              : 'Failed to send interest.',
+                        ),
                         backgroundColor: success ? Colors.green : Colors.red,
                       ),
                     );
@@ -558,7 +579,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Interested', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Interested',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
               ),
             const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
           ],

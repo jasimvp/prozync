@@ -1,14 +1,16 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
-import 'api_service.dart';
 
 class PostService extends ChangeNotifier {
   static final PostService _instance = PostService._internal();
   factory PostService() => _instance;
   PostService._internal();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<Post> _posts = [];
   List<Post> _savedPosts = [];
@@ -22,205 +24,288 @@ class PostService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSavedLoading => _isSavedLoading;
 
-  Future<void> fetchPosts({String? search, int? projectId}) async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
+  Future<void> fetchPosts({String? search, String? projectId}) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    _posts = [
-      Post(
-        id: 1,
-        user: 1,
-        username: 'jasim_dev',
-        fullName: 'Jasim VP',
-        content: 'Check out my new project built with Flutter! 🚀 #prozync #flutter',
-        likeCount: 15,
-        commentCount: 2,
-        isLiked: true,
-        isSaved: true,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      Post(
-        id: 2,
-        user: 2,
-        username: 'alice_smith',
-        fullName: 'Alice Smith',
-        content: 'Just finished the backend API for my e-ecommerce site. Feeling great!',
-        likeCount: 42,
-        commentCount: 5,
-        isLiked: false,
-        isSaved: false,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
+      Query query = _firestore
+          .collection('posts')
+          .orderBy('created_at', descending: true);
 
-    if (search != null && search.isNotEmpty) {
-      _posts = _posts.where((p) => p.content.toLowerCase().contains(search.toLowerCase()) || p.username.toLowerCase().contains(search.toLowerCase())).toList();
+      if (projectId != null) {
+        query = query.where('project', isEqualTo: projectId);
+      }
+
+      final snapshot = await query.get();
+      _posts = snapshot.docs
+          .map(
+            (doc) => Post.fromJson({
+              ...Map<String, dynamic>.from(doc.data()!),
+              'id': doc.id,
+            }),
+          )
+          .toList();
+
+      if (search != null && search.isNotEmpty) {
+        _posts = _posts
+            .where(
+              (p) =>
+                  p.content.toLowerCase().contains(search.toLowerCase()) ||
+                  p.username.toLowerCase().contains(search.toLowerCase()),
+            )
+            .toList();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching posts: $e');
+      notifyListeners();
     }
-    
-    if (projectId != null) {
-      _posts = _posts.where((p) => p.project == projectId).toList();
-    }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> fetchMyPosts() async {
-    _isLoading = true;
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 500));
-    _posts = _posts.where((p) => p.user == 1).toList();
-    _isLoading = false;
-    notifyListeners();
+    if (_auth.currentUser == null) return;
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final snapshot = await _firestore
+          .collection('posts')
+          .where('user', isEqualTo: _auth.currentUser!.uid)
+          .orderBy('created_at', descending: true)
+          .get();
+
+      _posts = snapshot.docs
+          .map(
+            (doc) => Post.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }),
+          )
+          .toList();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      debugPrint('Error fetching my posts: $e');
+      notifyListeners();
+    }
   }
 
   Future<Map<String, dynamic>> createPost(
     String content, {
-    int? projectId,
-    http.MultipartFile? imageFile,
+    String? projectId,
+    String? imageUrl,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
-    final newPost = Post(
-      id: DateTime.now().millisecondsSinceEpoch,
-      user: 1,
-      username: 'jasim_dev',
-      fullName: 'Jasim VP',
-      content: content,
-      project: projectId,
-      likeCount: 0,
-      commentCount: 0,
-      createdAt: DateTime.now(),
-    );
-    _posts.insert(0, newPost);
-    notifyListeners();
-    return {'success': true, 'post': newPost};
-  }
+    try {
+      if (_auth.currentUser == null) throw 'User not logged in';
 
-  Future<bool> likePost(int postId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final wasLiked = _posts[idx].isLiked;
-      _posts[idx] = _posts[idx].copyWith(
-        isLiked: !wasLiked,
-        likeCount: wasLiked ? _posts[idx].likeCount - 1 : _posts[idx].likeCount + 1,
-      );
+      final docRef = _firestore.collection('posts').doc();
+      final postData = {
+        'id': docRef.id,
+        'user': _auth.currentUser!.uid,
+        'username': _auth.currentUser!.displayName ?? 'Anonymous',
+        'content': content,
+        'project': projectId,
+        'image': imageUrl,
+        'like_count': 0,
+        'comment_count': 0,
+        'created_at': FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(postData);
+      final newPost = Post.fromJson({
+        ...postData,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      _posts.insert(0, newPost);
       notifyListeners();
+      return {'success': true, 'post': newPost};
+    } catch (e) {
+      debugPrint('Error creating post: $e');
+      return {'success': false, 'message': e.toString()};
     }
-    return true;
   }
 
-  Future<bool> toggleSavePost(int postId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final idx = _posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _posts[idx] = _posts[idx].copyWith(isSaved: !_posts[idx].isSaved);
-      if (_posts[idx].isSaved) {
-        if (!_savedPosts.any((p) => p.id == postId)) {
-          _savedPosts.insert(0, _posts[idx]);
-        }
-      } else {
-        _savedPosts.removeWhere((p) => p.id == postId);
+  Future<bool> likePost(String postId) async {
+    try {
+      final postRef = _firestore.collection('posts').doc(postId);
+      await postRef.update({'like_count': FieldValue.increment(1)});
+
+      final idx = _posts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _posts[idx] = _posts[idx].copyWith(
+          likeCount: _posts[idx].likeCount + 1,
+          isLiked: true,
+        );
+        notifyListeners();
       }
-      notifyListeners();
       return true;
+    } catch (e) {
+      debugPrint('Error liking post: $e');
+      return false;
     }
-    return false;
+  }
+
+  Future<bool> toggleSavePost(String postId) async {
+    if (_auth.currentUser == null) return false;
+    try {
+      final userRef = _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('saved_posts')
+          .doc(postId);
+      final doc = await userRef.get();
+
+      if (doc.exists) {
+        await userRef.delete();
+      } else {
+        await userRef.set({
+          'post_id': postId,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
+
+      final idx = _posts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _posts[idx] = _posts[idx].copyWith(isSaved: !doc.exists);
+        if (_posts[idx].isSaved) {
+          if (!_savedPosts.any((p) => p.id == postId)) {
+            _savedPosts.insert(0, _posts[idx]);
+          }
+        } else {
+          _savedPosts.removeWhere((p) => p.id == postId);
+        }
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error toggling save post: $e');
+      return false;
+    }
   }
 
   Future<void> fetchSavedPosts() async {
-    _isSavedLoading = true;
-    Future.microtask(() => notifyListeners());
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    _savedPosts = _posts.where((p) => p.isSaved).toList();
-    _isSavedLoading = false;
-    notifyListeners();
-  }
-
-  Future<List<Comment>> fetchComments(int postId) async {
-    _isLoading = true;
-    Future.microtask(() => notifyListeners());
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    final mockComments = [
-      Comment(
-        id: 1,
-        user: 2,
-        username: 'alice_smith',
-        fullName: 'Alice Smith',
-        content: 'Wow, this looks amazing!',
-        post: postId,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-      Comment(
-        id: 2,
-        user: 3,
-        username: 'bob_builder',
-        fullName: 'Bob Builder',
-        content: 'Great work dev!',
-        post: postId,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      ),
-    ];
-    _comments = mockComments;
-    _isLoading = false;
-    notifyListeners();
-    return mockComments;
-  }
-
-  Future<Comment?> addComment(int postId, String content) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    final newComment = Comment(
-      id: DateTime.now().millisecondsSinceEpoch,
-      user: 1,
-      username: 'jasim_dev',
-      fullName: 'Jasim VP',
-      post: postId,
-      content: content,
-      createdAt: DateTime.now(),
-    );
-    _comments.add(newComment);
-    
-    final idx = _posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _posts[idx] = _posts[idx].copyWith(commentCount: _posts[idx].commentCount + 1);
-    }
-
-    notifyListeners();
-    return newComment;
-  }
-
-  Future<Post?> fetchPostById(int id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _posts.firstWhere((p) => p.id == id, orElse: () => _posts.isNotEmpty ? _posts[0] : throw Exception('Not found'));
-  }
-
-  Future<Post?> updatePost(int id, Map<String, dynamic> data) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final index = _posts.indexWhere((p) => p.id == id);
-    if (index != -1) {
-      final updatedPost = _posts[index].copyWith(
-        content: data['content'] as String? ?? _posts[index].content,
-      );
-      _posts[index] = updatedPost;
+    if (_auth.currentUser == null) return;
+    try {
+      _isSavedLoading = true;
       notifyListeners();
-      return updatedPost;
+
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('saved_posts')
+          .get();
+      final postIds = snapshot.docs.map((doc) => doc.id).toList();
+
+      if (postIds.isEmpty) {
+        _savedPosts = [];
+      } else {
+        final postsSnapshot = await _firestore
+            .collection('posts')
+            .where(FieldPath.documentId, whereIn: postIds)
+            .get();
+        _savedPosts = postsSnapshot.docs
+            .map((doc) => Post.fromJson({...doc.data()!, 'id': doc.id}))
+            .toList();
+      }
+
+      _isSavedLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isSavedLoading = false;
+      debugPrint('Error fetching saved posts: $e');
+      notifyListeners();
+    }
+  }
+
+  Future<List<Comment>> fetchComments(String postId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .orderBy('created_at', descending: true)
+          .get();
+      final comments = snapshot.docs
+          .map((doc) => Comment.fromJson({...doc.data()!, 'id': doc.id}))
+          .toList();
+      _comments = comments;
+      notifyListeners();
+      return comments;
+    } catch (e) {
+      debugPrint('Error fetching comments: $e');
+      return [];
+    }
+  }
+
+  Future<Comment?> addComment(String postId, String content) async {
+    try {
+      if (_auth.currentUser == null) return null;
+
+      final postRef = _firestore.collection('posts').doc(postId);
+      final commentRef = postRef.collection('comments').doc();
+
+      final commentData = {
+        'id': commentRef.id,
+        'user': _auth.currentUser!.uid,
+        'username': _auth.currentUser!.displayName ?? 'Anonymous',
+        'content': content,
+        'post': postId,
+        'created_at': FieldValue.serverTimestamp(),
+      };
+
+      await commentRef.set(commentData);
+      await postRef.update({'comment_count': FieldValue.increment(1)});
+
+      final newComment = Comment.fromJson({
+        ...commentData,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      _comments.insert(0, newComment);
+
+      final idx = _posts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _posts[idx] = _posts[idx].copyWith(
+          commentCount: _posts[idx].commentCount + 1,
+        );
+      }
+
+      notifyListeners();
+      return newComment;
+    } catch (e) {
+      debugPrint('Error adding comment: $e');
+      return null;
+    }
+  }
+
+  Future<Post?> fetchPostById(String id) async {
+    try {
+      final doc = await _firestore.collection('posts').doc(id).get();
+      if (doc.exists) {
+        return Post.fromJson({...doc.data()!, 'id': doc.id});
+      }
+    } catch (e) {
+      debugPrint('Error fetching post by id: $e');
     }
     return null;
   }
 
-  Future<Post?> partialUpdatePost(int id, Map<String, dynamic> data) async {
-    return updatePost(id, data);
-  }
-
-  Future<bool> deletePost(int id) async {
-    await Future.delayed(const Duration(seconds: 1));
-    _posts.removeWhere((p) => p.id == id);
-    _savedPosts.removeWhere((p) => p.id == id);
-    notifyListeners();
-    return true;
+  Future<bool> deletePost(String id) async {
+    try {
+      await _firestore.collection('posts').doc(id).delete();
+      _posts.removeWhere((p) => p.id == id);
+      _savedPosts.removeWhere((p) => p.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting post: $e');
+      return false;
+    }
   }
 
   void clear() {

@@ -26,7 +26,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Explore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+              const Text(
+                'Explore',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
               const SizedBox(height: 8),
               Container(
                 height: 40,
@@ -45,7 +48,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     hintText: 'Search projects or developers...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.grey[200],
+                    fillColor:
+                        Theme.of(context).inputDecorationTheme.fillColor ??
+                        Colors.grey[200],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -115,7 +120,7 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
         if (_projectService.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-        
+
         final projects = _projectService.projects;
         if (projects.isEmpty) {
           return const Center(child: Text('No trending projects found'));
@@ -141,7 +146,9 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
           Container(
             height: 200,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
               image: DecorationImage(
                 image: NetworkImage(project.fullCoverImage),
                 fit: BoxFit.cover,
@@ -155,29 +162,38 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
               children: [
                 InkWell(
                   onTap: () async {
-                    // Show loading
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (context) => const Center(child: CircularProgressIndicator()),
+                      builder: (context) =>
+                          const Center(child: CircularProgressIndicator()),
                     );
 
                     try {
-                      await ProfileService().fetchProfiles(search: project.ownerName);
+                      await ProfileService().fetchProfiles(
+                        search: project.ownerName,
+                      );
                       if (context.mounted) {
-                        Navigator.pop(context); // Remove loading
-                        final profile = ProfileService().profiles.firstWhere((p) => p.id == project.owner);
+                        Navigator.pop(context);
+                        final profile = ProfileService().profiles.firstWhere(
+                          (p) => p.id == project.owner,
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => OtherUserProfileScreen(profile: profile),
+                            builder: (context) =>
+                                OtherUserProfileScreen(profile: profile),
                           ),
                         );
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        Navigator.pop(context); // Remove loading
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load profile')));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not load profile'),
+                          ),
+                        );
                       }
                     }
                   },
@@ -185,8 +201,9 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundImage:
-                            NetworkImage('https://ui-avatars.com/api/?name=${project.ownerName}&background=random'),
+                        backgroundImage: NetworkImage(
+                          'https://ui-avatars.com/api/?name=${project.ownerName}&background=random',
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -195,22 +212,23 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                           children: [
                             Text(
                               project.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 2),
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                                    border: Border.all(
+                                      color: Colors.blue.withOpacity(0.3),
+                                    ),
                                   ),
                                   child: Text(
                                     project.language,
@@ -225,9 +243,7 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                                 Expanded(
                                   child: Text(
                                     'by ${project.ownerName} • Trending',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: Colors.grey,
                                           fontSize: 12,
@@ -241,7 +257,9 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                         ),
                       ),
                       IconButton(
-                          onPressed: () {}, icon: const Icon(Icons.more_horiz)),
+                        onPressed: () {},
+                        icon: const Icon(Icons.more_horiz),
+                      ),
                     ],
                   ),
                 ),
@@ -261,9 +279,8 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ProjectDetailsScreen(
-                                project: project,
-                              ),
+                              builder: (context) =>
+                                  ProjectDetailsScreen(project: project),
                             ),
                           );
                         },
@@ -283,14 +300,19 @@ class _TrendingProjectsViewState extends State<TrendingProjectsView> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            final success = await ProjectService().toggleInterested(project.id);
+                            final success = await ProjectService()
+                                .toggleInterested(project.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(success 
-                                    ? 'Interest sent to ${project.ownerName}!' 
-                                    : 'Failed to send interest.'),
-                                  backgroundColor: success ? Colors.green : Colors.red,
+                                  content: Text(
+                                    success
+                                        ? 'Interest sent to ${project.ownerName}!'
+                                        : 'Failed to send interest.',
+                                  ),
+                                  backgroundColor: success
+                                      ? Colors.green
+                                      : Colors.red,
                                 ),
                               );
                             }
@@ -328,10 +350,8 @@ class DevelopersListView extends StatefulWidget {
 
 class _DevelopersListViewState extends State<DevelopersListView> {
   final _profileService = ProfileService();
-  // Track follow status locally per profile id to avoid stale re-fetch state
-  final Map<int, bool> _followingStatusMap = {};
-  // Track which profiles are currently loading a follow action
-  final Set<int> _loadingSet = {};
+  final Map<String, bool> _followingStatusMap = {};
+  final Set<String> _loadingSet = {};
 
   @override
   void initState() {
@@ -348,26 +368,29 @@ class _DevelopersListViewState extends State<DevelopersListView> {
     }
   }
 
-  bool _isFollowing(int profileId, String connectionStatus) {
+  bool _isFollowing(String profileId, String connectionStatus) {
     if (_followingStatusMap.containsKey(profileId)) {
       return _followingStatusMap[profileId]!;
     }
     return connectionStatus == 'following' || connectionStatus == 'followed';
   }
 
-  Future<void> _toggleFollow(int profileId) async {
+  Future<void> _toggleFollow(String profileId) async {
     if (_loadingSet.contains(profileId)) return;
 
     final currentlyFollowing = _followingStatusMap.containsKey(profileId)
         ? _followingStatusMap[profileId]!
         : _profileService.profiles
-            .firstWhere((p) => p.id == profileId,
-                orElse: () => _profileService.profiles.first)
-            .connectionStatus == 'following';
+                  .firstWhere(
+                    (p) => p.id == profileId,
+                    orElse: () => _profileService.profiles.first,
+                  )
+                  .connectionStatus ==
+              'following';
 
     setState(() {
       _loadingSet.add(profileId);
-      _followingStatusMap[profileId] = !currentlyFollowing; // optimistic
+      _followingStatusMap[profileId] = !currentlyFollowing;
     });
 
     final result = await _profileService.followProfile(profileId);
@@ -375,7 +398,8 @@ class _DevelopersListViewState extends State<DevelopersListView> {
     if (mounted) {
       if (result != null) {
         final nowFollowing =
-            result.toLowerCase() == 'followed' || result.toLowerCase() == 'following';
+            result.toLowerCase() == 'followed' ||
+            result.toLowerCase() == 'following';
         setState(() {
           _followingStatusMap[profileId] = nowFollowing;
           _loadingSet.remove(profileId);
@@ -387,7 +411,6 @@ class _DevelopersListViewState extends State<DevelopersListView> {
           ),
         );
       } else {
-        // Revert on failure
         setState(() {
           _followingStatusMap[profileId] = currentlyFollowing;
           _loadingSet.remove(profileId);
@@ -409,8 +432,9 @@ class _DevelopersListViewState extends State<DevelopersListView> {
         }
 
         final currentUserId = _profileService.myProfile?.id;
-        final profiles =
-            _profileService.profiles.where((p) => p.id != currentUserId).toList();
+        final profiles = _profileService.profiles
+            .where((p) => p.id != currentUserId)
+            .toList();
 
         if (profiles.isEmpty) {
           return const Center(child: Text('No other developers found'));
@@ -421,7 +445,10 @@ class _DevelopersListViewState extends State<DevelopersListView> {
           itemCount: profiles.length,
           itemBuilder: (context, index) {
             final profile = profiles[index];
-            final isFollowing = _isFollowing(profile.id, profile.connectionStatus);
+            final isFollowing = _isFollowing(
+              profile.id,
+              profile.connectionStatus,
+            );
             final isLoading = _loadingSet.contains(profile.id);
 
             return Card(
@@ -429,13 +456,17 @@ class _DevelopersListViewState extends State<DevelopersListView> {
               elevation: 0,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    profile.fullProfilePic,
-                  ),
+                  backgroundImage: NetworkImage(profile.fullProfilePic),
                   onBackgroundImageError: (e, s) {},
                 ),
-                title: Text(profile.fullName.isNotEmpty ? profile.fullName : profile.username),
-                subtitle: Text('${profile.profession} • ${profile.repoCount} repos'),
+                title: Text(
+                  profile.fullName.isNotEmpty
+                      ? profile.fullName
+                      : profile.username,
+                ),
+                subtitle: Text(
+                  '${profile.profession} • ${profile.repoCount} repos',
+                ),
                 trailing: isLoading
                     ? const SizedBox(
                         width: 80,
@@ -449,33 +480,41 @@ class _DevelopersListViewState extends State<DevelopersListView> {
                         ),
                       )
                     : isFollowing
-                        ? OutlinedButton(
-                            onPressed: () => _toggleFollow(profile.id),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(80, 32),
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20)),
-                              side: const BorderSide(color: Colors.grey),
-                            ),
-                            child: const Text('Following',
-                                style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _toggleFollow(profile.id),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(80, 32),
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20)),
-                            ),
-                            child: const Text('Follow', style: TextStyle(fontSize: 12)),
+                    ? OutlinedButton(
+                        onPressed: () => _toggleFollow(profile.id),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(80, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
+                          side: const BorderSide(color: Colors.grey),
+                        ),
+                        child: const Text(
+                          'Following',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: () => _toggleFollow(profile.id),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(80, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Follow',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => OtherUserProfileScreen(profile: profile),
+                      builder: (context) =>
+                          OtherUserProfileScreen(profile: profile),
                     ),
                   );
                 },

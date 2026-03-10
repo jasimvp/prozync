@@ -24,8 +24,8 @@ class ProfileService extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 500));
     _profiles = [
       Profile(
-        id: 1,
-        user: 1,
+        id: '1',
+        user: '1',
         username: 'jasim_dev',
         email: 'jasim@example.com',
         fullName: 'Jasim VP',
@@ -37,8 +37,8 @@ class ProfileService extends ChangeNotifier {
         connectionStatus: 'following',
       ),
       Profile(
-        id: 2,
-        user: 2,
+        id: '2',
+        user: '2',
         username: 'alice_smith',
         email: 'alice@example.com',
         fullName: 'Alice Smith',
@@ -52,7 +52,13 @@ class ProfileService extends ChangeNotifier {
     ];
 
     if (search != null && search.isNotEmpty) {
-      _profiles = _profiles.where((p) => p.username.toLowerCase().contains(search.toLowerCase()) || p.fullName.toLowerCase().contains(search.toLowerCase())).toList();
+      _profiles = _profiles
+          .where(
+            (p) =>
+                p.username.toLowerCase().contains(search.toLowerCase()) ||
+                p.fullName.toLowerCase().contains(search.toLowerCase()),
+          )
+          .toList();
     }
 
     _isLoading = false;
@@ -65,8 +71,8 @@ class ProfileService extends ChangeNotifier {
 
     await Future.delayed(const Duration(milliseconds: 500));
     _myProfile = Profile(
-      id: 1,
-      user: 1,
+      id: '1',
+      user: '1',
       username: 'jasim_dev',
       email: 'jasim@example.com',
       fullName: 'Jasim VP',
@@ -83,7 +89,7 @@ class ProfileService extends ChangeNotifier {
     return true;
   }
 
-  Future<Profile?> fetchProfileById(int id) async {
+  Future<Profile?> fetchProfileById(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return Profile(
       id: id,
@@ -100,7 +106,10 @@ class ProfileService extends ChangeNotifier {
     );
   }
 
-  Future<bool> updateProfile(Map<String, dynamic> data, {dynamic profilePic}) async {
+  Future<bool> updateProfile(
+    Map<String, dynamic> data, {
+    dynamic profilePic,
+  }) async {
     await Future.delayed(const Duration(seconds: 1));
     if (_myProfile != null) {
       _myProfile = _myProfile!.copyWith(
@@ -114,14 +123,16 @@ class ProfileService extends ChangeNotifier {
     return true;
   }
 
-  Future<String?> followProfile(int id) async {
+  Future<String?> followProfile(String id) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final index = _profiles.indexWhere((p) => p.id == id);
     if (index != -1) {
       final isFollowing = _profiles[index].connectionStatus == 'following';
       _profiles[index] = _profiles[index].copyWith(
         connectionStatus: isFollowing ? 'none' : 'following',
-        followerCount: (int.parse(_profiles[index].followerCount) + (isFollowing ? -1 : 1)).toString(),
+        followerCount:
+            (int.parse(_profiles[index].followerCount) + (isFollowing ? -1 : 1))
+                .toString(),
       );
       notifyListeners();
       return isFollowing ? 'Unfollowed' : 'Following';
@@ -150,7 +161,7 @@ class ProfileService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> sendConnectionRequest(int receiverId) async {
+  Future<bool> sendConnectionRequest(String receiverId) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return true;
   }
@@ -167,22 +178,28 @@ class ProfileService extends ChangeNotifier {
     return Profile.fromJson(data);
   }
 
-  Future<Profile?> updateProfileById(int id, Map<String, dynamic> data) async {
+  Future<Profile?> updateProfileById(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     await Future.delayed(const Duration(seconds: 1));
     return null;
   }
 
-  Future<Profile?> partialUpdateProfileById(int id, Map<String, dynamic> data) async {
+  Future<Profile?> partialUpdateProfileById(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     await Future.delayed(const Duration(seconds: 1));
     return null;
   }
 
-  Future<bool> deleteProfileById(int id) async {
+  Future<bool> deleteProfileById(String id) async {
     await Future.delayed(const Duration(seconds: 1));
     return true;
   }
 
-  Future<bool> connectWithProfile(int id) async {
+  Future<bool> connectWithProfile(String id) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return true;
   }

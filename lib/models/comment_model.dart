@@ -1,9 +1,9 @@
 class Comment {
-  final int id;
-  final int user;
+  final String id;
+  final String user;
   final String username;
   final String? fullName;
-  final int post;
+  final String post;
   final String content;
   final DateTime createdAt;
 
@@ -19,14 +19,16 @@ class Comment {
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
-      id: json['id'] ?? 0,
-      user: json['user'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      user: json['user']?.toString() ?? '',
       username: json['username'] ?? 'User',
       fullName: json['full_name'],
-      post: json['post'] ?? 0,
+      post: json['post']?.toString() ?? '',
       content: json['content'] ?? json['comment_text'] ?? json['text'] ?? '',
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? (json['created_at'] is String
+                ? DateTime.parse(json['created_at'])
+                : (json['created_at'] as dynamic).toDate())
           : DateTime.now(),
     );
   }

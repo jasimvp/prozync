@@ -1,13 +1,8 @@
-import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:prozync/features/profile/other_user_profile_screen.dart';
 import 'package:prozync/features/projects/project_details_screen.dart';
 import 'package:prozync/models/project_model.dart';
 import 'package:prozync/core/services/project_service.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:prozync/core/theme/app_theme.dart';
 import 'package:prozync/core/services/profile_service.dart';
 import 'package:prozync/features/projects/upload_project_screen.dart';
@@ -681,16 +676,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
-  Future<void> _handleInviteResponse(int id, String status) async {
+  Future<void> _handleInviteResponse(String id, String status) async {
     final success = await _projectService.respondToInvitation(id, status);
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success 
-            ? 'Invitation ${status.toLowerCase()} successfully' 
-            : 'Failed to respond to invitation',
+          success
+              ? 'Invitation ${status.toLowerCase()} successfully'
+              : 'Failed to respond to invitation',
         ),
         backgroundColor: success ? Colors.green : Colors.red,
       ),

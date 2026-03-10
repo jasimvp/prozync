@@ -1,8 +1,8 @@
 import '../core/constants.dart';
 
 class Profile {
-  final int id;
-  final int user;
+  final String id;
+  final String user;
   final String username;
   final String email;
   final String fullName;
@@ -36,33 +36,28 @@ class Profile {
 
     String imageUrl = profilePic!;
 
-    if (imageUrl.contains('127.0.0.1:8000') || imageUrl.contains('localhost:8000')) {
-      imageUrl = imageUrl.replaceAll(RegExp(r'http://(127\.0\.0\.1|localhost):8000/?'), '');
-      if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
-      return '${AppConstants.baseUrl}/$imageUrl';
-    }
-
     if (imageUrl.startsWith('http')) return imageUrl;
     if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
     return '${AppConstants.baseUrl}/$imageUrl';
   }
+
   factory Profile.fromJson(Map<String, dynamic> json) {
     String status = (json['connection_status'] ?? '').toString().toLowerCase();
-    
-    // If status is 'followed' or backend provided is_following boolean, treat as 'following'
-    if (status == 'followed' || (status.isEmpty && json['is_following'] == true)) {
+
+    if (status == 'followed' ||
+        (status.isEmpty && json['is_following'] == true)) {
       status = 'following';
     }
 
     final rawUsername = json['username'] ?? json['user_name'] ?? '';
-    final userId = json['user'] is int 
-        ? json['user'] 
-        : (json['user'] is Map ? (json['user']['id'] ?? 0) : 0);
+    final userId = json['user']?.toString() ?? '';
 
     return Profile(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? '',
       user: userId,
-      username: rawUsername.toString().isNotEmpty ? rawUsername.toString() : 'Unknown',
+      username: rawUsername.toString().isNotEmpty
+          ? rawUsername.toString()
+          : 'Unknown',
       email: json['email'] ?? '',
       fullName: json['full_name'] ?? '',
       phone: json['phone'] ?? '',
@@ -76,8 +71,8 @@ class Profile {
   }
 
   Profile copyWith({
-    int? id,
-    int? user,
+    String? id,
+    String? user,
     String? username,
     String? email,
     String? fullName,
@@ -107,10 +102,18 @@ class Profile {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
+      'user': user,
+      'username': username,
+      'email': email,
       'full_name': fullName,
       'phone': phone,
       'bio': bio,
       'profession': profession,
+      'profile_pic': profilePic,
+      'follower_count': int.tryParse(followerCount) ?? 0,
+      'repo_count': int.tryParse(repoCount) ?? 0,
+      'connection_status': connectionStatus,
     };
   }
 }
