@@ -194,6 +194,7 @@ class ProjectService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      // Fetch from invitations collection
       final snapshot = await _firestore
           .collection('invitations')
           .where('receiver_id', isEqualTo: user.uid)
@@ -203,6 +204,38 @@ class ProjectService extends ChangeNotifier {
       _invitations = snapshot.docs.map((doc) {
         return Invitation.fromJson({...doc.data(), 'id': doc.id});
       }).toList();
+
+      // Also fetch invitation notifications that might not be in invitations collection
+      final notificationSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .where('type', isEqualTo: 'invitation')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      // Merge invitation notifications with regular invitations
+      // Check for duplicates by project_id
+      final existingProjectIds = _invitations.map((i) => i.project).toSet();
+
+      for (final doc in notificationSnapshot.docs) {
+        final data = doc.data();
+        final projectId = data['project_id']?.toString() ?? '';
+        if (projectId.isNotEmpty && !existingProjectIds.contains(projectId)) {
+          // Add as invitation if not already present
+          _invitations.add(
+            Invitation.fromJson({
+              ...data,
+              'id': doc.id,
+              'project': projectId,
+              'receiver': user.uid,
+            }),
+          );
+        }
+      }
+
+      // Sort by date
+      _invitations.sort((a, b) => b.sentAt.compareTo(a.sentAt));
 
       _isLoading = false;
       notifyListeners();

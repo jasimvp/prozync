@@ -53,10 +53,44 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 const SizedBox(width: 8),
               ],
               bottom: TabBar(
-                tabs: const [
+                tabs: [
                   Tab(text: 'My Portfolio'),
                   Tab(text: 'Collaborations'),
-                  Tab(text: 'Invitations'),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Invitations'),
+                        if (_projectService.invitations
+                            .where((i) => i.status.toUpperCase() == 'PENDING')
+                            .isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              _projectService.invitations
+                                  .where(
+                                    (i) => i.status.toUpperCase() == 'PENDING',
+                                  )
+                                  .length
+                                  .toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
                 indicatorColor: AppTheme.primaryColor,
                 labelColor: AppTheme.primaryColor,
