@@ -121,7 +121,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   p.owner != ProfileService().myProfile?.id &&
                                   p.collaborators.any(
                                     (c) =>
-                                        (c is Map ? c['id'] : c) ==
+                                        (c is Map
+                                            ? (c['uid']?.toString() ??
+                                                  c['id']?.toString() ??
+                                                  '')
+                                            : c.toString()) ==
                                         ProfileService().myProfile?.id,
                                   ),
                             )

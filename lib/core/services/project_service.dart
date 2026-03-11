@@ -249,61 +249,137 @@ class ProjectService extends ChangeNotifier {
 
   Future<bool> respondToInvitation(String invitationId, String action) async {
     try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      String? projectId;
+      String? senderId;
+      String? senderName;
+      String projectName = 'Project';
+
+      // Try to find the invitation in the invitations collection first
       final inviteRef = _firestore.collection('invitations').doc(invitationId);
       final inviteDoc = await inviteRef.get();
-      if (!inviteDoc.exists) return false;
 
-      final inviteData = inviteDoc.data()!;
-      final projectId = inviteData['project_id'];
-      final receiverId = inviteData['receiver_id'];
-      final receiverName = _auth.currentUser?.displayName ?? 'User';
+      bool invitationExists = false;
+      if (inviteDoc.exists) {
+        invitationExists = true;
+        final inviteData = inviteDoc.data()!;
+        projectId = inviteData['project_id']?.toString();
+        senderId = inviteData['sender_id']?.toString();
+        senderName = inviteData['sender_name']?.toString();
+        projectName = inviteData['project_name']?.toString() ?? 'Project';
+      }
+
+      // If not found in invitations collection, try to find in notifications
+      if (projectId == null || projectId.isEmpty) {
+        final notificationDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('notifications')
+            .doc(invitationId)
+            .get();
+
+        if (notificationDoc.exists) {
+          final notifData = notificationDoc.data()!;
+          projectId = notifData['project_id']?.toString();
+          senderId = notifData['from_uid']?.toString();
+          senderName = notifData['from_name']?.toString();
+          projectName = notifData['project_name']?.toString() ?? 'Project';
+        }
+      }
+
+      // If still no projectId found, return false
+      if (projectId == null || projectId.isEmpty) {
+        debugPrint('Invitation not found: $invitationId');
+        return false;
+      }
+
+      final receiverName = user.displayName ?? 'User';
 
       if (action == 'accepted') {
         // Add to project collaborators
         final projectRef = _firestore.collection('projects').doc(projectId);
         final projectDoc = await projectRef.get();
         if (projectDoc.exists) {
+          final projectData = projectDoc.data()!;
           final List<dynamic> collabs = List.from(
-            projectDoc.data()?['collaborators'] ?? [],
+            projectData['collaborators'] ?? [],
           );
-          collabs.add({
-            'uid': receiverId,
-            'username': receiverName,
-            'profile_pic': _auth.currentUser?.photoURL,
-          });
 
-          await projectRef.update({
-            'collaborators': collabs,
-            'collaborator_count': collabs.length,
-          });
+          // Check if already a collaborator
+          if (!collabs.any(
+            (c) => (c is Map ? c['uid'] : c.toString()) == user.uid,
+          )) {
+            collabs.add({
+              'uid': user.uid,
+              'username': receiverName,
+              'profile_pic': user.photoURL,
+            });
+
+            await projectRef.update({
+              'collaborators': collabs,
+              'collaborator_count': collabs.length,
+            });
+          }
+
+          // Get the actual project name from the project if we don't have it
+          if (projectName == 'Project') {
+            projectName = projectData['project_name']?.toString() ?? 'Project';
+          }
 
           // Send Notification to sender that their invitation was accepted
-          final senderId = inviteData['sender_id'];
-          if (senderId != null) {
+          if (senderId != null && senderId.isNotEmpty) {
             await _firestore
                 .collection('users')
                 .doc(senderId)
                 .collection('notifications')
                 .add({
                   'type': 'collab_accept',
-                  'from_uid': _auth.currentUser?.uid,
+                  'from_uid': user.uid,
                   'from_name': receiverName,
                   'project_id': projectId,
-                  'project_name':
-                      projectDoc.data()?['project_name'] ?? 'Project',
-                  'message': '$receiverName accepted your invitation to collab',
+                  'project_name': projectName,
+                  'message':
+                      '$receiverName accepted your invitation to collab on $projectName',
                   'timestamp': FieldValue.serverTimestamp(),
                   'read': false,
                 });
           }
         }
-        await inviteRef.update({'status': 'accepted'});
+
+        // Update invitation status if it exists in the invitations collection
+        if (invitationExists) {
+          await inviteRef.update({'status': 'accepted'});
+        }
+
+        // Mark the notification as read/handled
+        if (!invitationExists) {
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('notifications')
+              .doc(invitationId)
+              .update({'read': true, 'status': 'accepted'});
+        }
       } else {
-        await inviteRef.update({'status': 'rejected'});
+        // Reject the invitation
+        if (invitationExists) {
+          await inviteRef.update({'status': 'rejected'});
+        } else {
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('notifications')
+              .doc(invitationId)
+              .update({'read': true, 'status': 'rejected'});
+        }
       }
 
       // Refresh invitations list after responding
       await fetchInvitations();
+      // Also refresh projects to show the new collaboration
+      await fetchProjects();
       return true;
     } catch (e) {
       debugPrint('Error responding to invitation: $e');
@@ -394,12 +470,40 @@ class ProjectService extends ChangeNotifier {
       final likeRef = projectRef.collection('likes').doc(user.uid);
       final doc = await likeRef.get();
 
+      // OPTIMISTIC UI UPDATE - Update local state immediately
+      // Find the project in all lists and update locally
+      void updateLikeState(List<Project> list, bool newIsLiked) {
+        final idx = list.indexWhere((p) => p.id == projectId);
+        if (idx != -1) {
+          list[idx] = list[idx].copyWith(
+            isLiked: newIsLiked,
+            likeCount: newIsLiked
+                ? list[idx].likeCount + 1
+                : list[idx].likeCount - 1,
+          );
+        }
+      }
+
       if (doc.exists) {
-        // Unlike
+        // Unlike - Update local state FIRST, then Firestore
+        updateLikeState(_projects, false);
+        updateLikeState(_myRepos, false);
+        updateLikeState(_pinnedProjects, false);
+        updateLikeState(_savedProjects, false);
+        notifyListeners();
+
+        // Then update Firestore
         await likeRef.delete();
         await projectRef.update({'likes_count': FieldValue.increment(-1)});
       } else {
-        // Like
+        // Like - Update local state FIRST, then Firestore
+        updateLikeState(_projects, true);
+        updateLikeState(_myRepos, true);
+        updateLikeState(_pinnedProjects, true);
+        updateLikeState(_savedProjects, true);
+        notifyListeners();
+
+        // Then update Firestore
         await likeRef.set({
           'uid': user.uid,
           'timestamp': FieldValue.serverTimestamp(),
@@ -407,10 +511,13 @@ class ProjectService extends ChangeNotifier {
         await projectRef.update({'likes_count': FieldValue.increment(1)});
       }
 
-      fetchProjects();
+      // Refresh from server to ensure consistency
+      // fetchProjects(); // Removed to avoid race conditions - local state is now accurate
       return true;
     } catch (e) {
       debugPrint('Error liking project: $e');
+      // Revert on error - re-fetch from server
+      await fetchProjects();
       return false;
     }
   }
