@@ -157,7 +157,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Widget _buildInvitationsList(BuildContext context) {
     final invitations = _projectService.invitations
-        .where((i) => i.status == 'PENDING')
+        .where((i) => i.status.toUpperCase() == 'PENDING')
         .toList();
 
     if (_projectService.isLoading && invitations.isEmpty) {

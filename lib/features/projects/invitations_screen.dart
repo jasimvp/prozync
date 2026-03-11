@@ -23,49 +23,54 @@ class _InvitationsScreenState extends State<InvitationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Project Invitations'), elevation: 0),
-      body: ListenableBuilder(
-        listenable: _projectService,
-        builder: (context, _) {
-          final invitations = _projectService.invitations
-              .where((i) => i.status.toUpperCase() == 'PENDING')
-              .toList();
-
-          if (_projectService.isLoading && invitations.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (invitations.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.group_add_outlined,
-                    size: 60,
-                    color: Colors.grey[300],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No pending invitations',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: invitations.length,
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, index) {
-              final invite = invitations[index];
-              return _buildInviteCard(invite);
-            },
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _projectService.fetchInvitations();
         },
+        child: ListenableBuilder(
+          listenable: _projectService,
+          builder: (context, _) {
+            final invitations = _projectService.invitations
+                .where((i) => i.status.toUpperCase() == 'PENDING')
+                .toList();
+
+            if (_projectService.isLoading && invitations.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (invitations.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.group_add_outlined,
+                      size: 60,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No pending invitations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              itemCount: invitations.length,
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                final invite = invitations[index];
+                return _buildInviteCard(invite);
+              },
+            );
+          },
+        ),
       ),
     );
   }
