@@ -46,9 +46,25 @@ class ProjectService extends ChangeNotifier {
             .where('project_name', isLessThanOrEqualTo: '$search\uf8ff');
       }
       final snapshot = await query.get();
+
+      final uid = _auth.currentUser?.uid;
+      Set<String> savedProjectIds = {};
+      if (uid != null) {
+        final savedSnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('saved_projects')
+            .get();
+        savedProjectIds = savedSnapshot.docs.map((d) => d.id).toSet();
+      }
+
       _projects = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return Project.fromJson({...data, 'id': doc.id});
+        return Project.fromJson({
+          ...data,
+          'id': doc.id,
+          'is_saved': savedProjectIds.contains(doc.id),
+        });
       }).toList();
       _isLoading = false;
       notifyListeners();
@@ -376,15 +392,49 @@ class ProjectService extends ChangeNotifier {
           .collection('saved_projects')
           .doc(projectId);
       final doc = await ref.get();
+      bool isNowSaved = false;
       if (doc.exists) {
         await ref.delete();
+        isNowSaved = false;
       } else {
         await ref.set({
           'id': projectId,
           'timestamp': FieldValue.serverTimestamp(),
         });
+        isNowSaved = true;
       }
-      fetchMySavedProjects();
+
+      void updateList(List<Project> list) {
+        for (var p in list) {
+          if (p.id == projectId) p.isSaved = isNowSaved;
+        }
+      }
+
+      updateList(_projects);
+      updateList(_myRepos);
+      updateList(_pinnedProjects);
+
+      if (isNowSaved) {
+        Project? p;
+        if (_projects.any((e) => e.id == projectId)) {
+          p = _projects.firstWhere((e) => e.id == projectId);
+        } else if (_myRepos.any((e) => e.id == projectId)) {
+          p = _myRepos.firstWhere((e) => e.id == projectId);
+        } else if (_pinnedProjects.any((e) => e.id == projectId)) {
+          p = _pinnedProjects.firstWhere((e) => e.id == projectId);
+        }
+
+        if (p != null && !_savedProjects.any((e) => e.id == projectId)) {
+          _savedProjects.insert(0, p);
+        } else if (p == null && !_savedProjects.any((e) => e.id == projectId)) {
+          // Wait, we don't have the rich project locally, let's fetch it via fetchMySavedProjects
+          fetchMySavedProjects();
+        }
+      } else {
+        _savedProjects.removeWhere((p) => p.id == projectId);
+      }
+
+      notifyListeners();
       return true;
     } catch (e) {
       return false;
@@ -540,7 +590,15 @@ class ProjectService extends ChangeNotifier {
   }
 
   Project getProjectById(String id, Project fallback) {
-    return _projects.firstWhere((p) => p.id == id, orElse: () => fallback);
+    if (_savedProjects.any((p) => p.id == id))
+      return _savedProjects.firstWhere((p) => p.id == id);
+    if (_projects.any((p) => p.id == id))
+      return _projects.firstWhere((p) => p.id == id);
+    if (_myRepos.any((p) => p.id == id))
+      return _myRepos.firstWhere((p) => p.id == id);
+    if (_pinnedProjects.any((p) => p.id == id))
+      return _pinnedProjects.firstWhere((p) => p.id == id);
+    return fallback;
   }
 
   Future<Project?> fetchProjectById(String id) async {

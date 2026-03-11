@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:prozync/core/services/notification_service.dart';
 import 'package:prozync/models/notification_model.dart';
@@ -74,10 +73,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
     switch (notification.status) {
       case 'ACCEPTED':
+      case 'collab_accept':
         icon = Icons.check_circle;
         color = Colors.green;
         break;
       case 'REJECTED':
+      case 'collab_reject':
         icon = Icons.cancel;
         color = Colors.red;
         break;
@@ -101,9 +102,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
         children: [
           CircleAvatar(
             backgroundImage: NetworkImage(
-              profilePicUrl ?? 'https://ui-avatars.com/api/?name=${notification.senderName}&background=random',
+              profilePicUrl ??
+                  'https://ui-avatars.com/api/?name=${notification.senderName}&background=random',
             ),
-            onBackgroundImageError: (e, s) => debugPrint('Error loading notification avatar: $e'),
+            onBackgroundImageError: (e, s) =>
+                debugPrint('Error loading notification avatar: $e'),
           ),
           Positioned(
             right: 0,
@@ -142,7 +145,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
         _timeAgo(notification.createdAt),
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: notification.status == 'PENDING'
+      trailing:
+          (notification.status == 'PENDING' ||
+              notification.status == 'invitation')
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
