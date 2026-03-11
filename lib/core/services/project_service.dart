@@ -222,13 +222,14 @@ class ProjectService extends ChangeNotifier {
         final data = doc.data();
         final projectId = data['project_id']?.toString() ?? '';
         if (projectId.isNotEmpty && !existingProjectIds.contains(projectId)) {
-          // Add as invitation if not already present
+          // Add as invitation if not already present - force PENDING status for notifications
           _invitations.add(
             Invitation.fromJson({
               ...data,
               'id': doc.id,
               'project': projectId,
               'receiver': user.uid,
+              'status': 'PENDING', // Notifications are always pending
             }),
           );
         }

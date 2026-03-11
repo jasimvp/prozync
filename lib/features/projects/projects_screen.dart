@@ -97,6 +97,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 unselectedLabelColor: Colors.grey,
                 indicatorWeight: 3,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                onTap: (index) {
+                  // Refresh invitations when the Invitations tab is tapped
+                  if (index == 2) {
+                    _projectService.fetchInvitations();
+                  }
+                },
               ),
             ),
             body: _projectService.isMyReposLoading
